@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Mulax Cafe IMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-lg-5 col-md-7">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-gradient-primary text-white py-4">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <i class="fas fa-coffee fa-2x me-3"></i>
+                        <h3 class="mb-0 text-center"><strong>Mulax Cafe</strong> IMS</h3>
+                    </div>
+                </div>
+                <div class="card-body p-5">
+                    <h4 class="text-center mb-4"><i class="fas fa-sign-in-alt me-2"></i>Staff Login</h4>
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            <div class="form-floating">
+                                {% if form.username.errors %}
+                                    {{ form.username(class="form-control is-invalid", id="username", placeholder="Username") }}
+                                    <label for="username">Username</label>
+                                    <div class="invalid-feedback">
+                                        {% for error in form.username.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.username(class="form-control", id="username", placeholder="Username") }}
+                                    <label for="username">Username</label>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-floating">
+                                {% if form.password.errors %}
+                                    {{ form.password(class="form-control is-invalid", id="password", placeholder="Password") }}
+                                    <label for="password">Password</label>
+                                    <div class="invalid-feedback">
+                                        {% for error in form.password.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.password(class="form-control", id="password", placeholder="Password") }}
+                                    <label for="password">Password</label>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4 form-check">
+                            {{ form.remember_me(class="form-check-input", id="remember_me") }}
+                            <label class="form-check-label" for="remember_me">Remember me</label>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i> Login
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-transparent text-center py-3">
+                    <small class="text-muted">
+                        <i class="fas fa-lock me-1"></i> Secure login
+                        {% if config.REGISTRATION_ENABLED %}
+                            | <a href="{{ url_for('auth.register') }}">Register</a>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Modern Font Awesome with proper cross-origin -->
+<script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Focus on username field when page loads
+    const usernameField = document.getElementById('username');
+    if (usernameField) {
+        usernameField.focus();
+    }
+    
+    // Show/hide password functionality
+    const passwordField = document.getElementById('password');
+    if (passwordField) {
+        const togglePassword = document.createElement('span');
+        togglePassword.innerHTML = '<i class="far fa-eye"></i>';
+        togglePassword.className = 'position-absolute end-0 top-50 translate-middle-y me-3';
+        togglePassword.style.cursor = 'pointer';
+        togglePassword.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.innerHTML = type === 'password' ? '<i class="far fa-eye"></i>' : '<i class="far fa-eye-slash"></i>';
+        });
+        
+        const passwordWrapper = passwordField.parentElement;
+        passwordWrapper.style.position = 'relative';
+        passwordWrapper.appendChild(togglePassword);
+    }
+});
+</script>
+{% endblock %}

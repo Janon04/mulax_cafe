@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Kitchen Inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Kitchen Inventory</h2>
+    <div>
+        <a href="{{ url_for('kitchen.record_usage') }}" class="btn me-2" style="background-color: #7B3F00; color: white;">
+            <i class="fas fa-utensils"></i> Record Usage
+        </a>
+        <a href="{{ url_for('kitchen.stock_movements') }}" class="btn" style="background-color: #FFD700; color: #212529;">
+            <i class="fas fa-exchange-alt"></i> View Movements
+        </a>
+    </div>
+</div>
+
+{% for category, products in categories.items() %}
+<div class="card mb-4">
+    <div class="card-header text-white" style="background-color: #7B3F00;">
+        {{ category }} ({{ products|length }} items)
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for product in products %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <div class="d-flex justify-content-between">
+                            <span>Stock:</span>
+                            <strong class="{% if product.current_stock < 5 %}text-danger{% elif product.current_stock < 10 %}text-warning{% else %}text-success{% endif %}">
+                                {{ product.current_stock }} {{ product.unit }}
+                            </strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Unit Price:</span>
+                            <strong>{{ product.unit_price }} RWF</strong>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="{{ url_for('product.add_stock', product_id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                            Manage Stock
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

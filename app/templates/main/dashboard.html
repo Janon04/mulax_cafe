@@ -1,0 +1,910 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Enhanced Dashboard Header with shadow and consistent styling -->
+    <div class="dashboard-header bg-gradient-primary rounded-lg p-4 mb-4 border border-2 border-primary shadow-lg">
+        <div class="d-sm-flex align-items-center justify-content-between">
+            <div>
+                <h1 class="h2 mb-2 text-white fw-bold" style="font-size: 1.75rem;">Dashboard Overview</h1>
+                <p class="mb-0 text-white" style="font-size: 1rem;">Welcome back! Here's Mulax cafe' Dashboard.</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <!-- Date Filter Section -->
+                <div class="mr-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0" style="font-size: 1rem;">
+                            <i class="fas fa-calendar-alt"></i>
+                        </span>
+                        <input type="date" class="form-control border-start-0" id="dashboard-date-filter" 
+                               value="{{ now.strftime('%Y-%m-%d') if now is defined else '' }}" 
+                               style="font-size: 1rem; max-width: 150px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- First Row of Cards -->
+    <div class="row">
+        <!-- Today's Orders Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start-primary border-3 shadow-sm h-100 hover-effect"
+                 style="border-left-width: 4px !important; border-left-color: #0d6efd !important;">
+                <div class="card-body d-flex flex-column">
+                    <div class="row align-items-center g-0 flex-grow-1">
+                        <div class="col me-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="text-uppercase fw-bold text-primary" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                    Today's Orders
+                                </div>
+                                <span class="badge bg-primary bg-opacity-10 text-primary ms-2 pulse-animation" 
+                                      style="font-size: 0.7rem; display: none;" id="new-today-orders-badge">
+                                    New!
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-baseline">
+                                <div class="h2 mb-0 fw-bold text-gray-800" style="font-size: 2rem;" id="today-orders-count">
+                                    {{ today_orders_count if today_orders_count is defined else '0' }}
+                                </div>
+                                <div class="ms-2 small text-primary fw-bold" style="font-size: 0.8rem; display: none;" id="today-count-change-indicator">
+                                    +0
+                                </div>
+                            </div>
+                            <div class="mt-2 text-xs fw-bold text-primary" style="font-size: 0.75rem;">
+                                Rwf: <span id="today-revenue">
+                                    {{ "%.2f"|format(today_revenue) if today_revenue is defined else '0.00' }}
+                                </span>
+                            </div>
+                            <div class="mt-2 text-xs text-muted" style="font-size: 0.75rem;">
+                                <i class="fas fa-sync-alt fa-spin me-1" id="today-refresh-icon" style="display: none;"></i>
+                                <span id="today-last-updated-text">Updated just now</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="icon-circle bg-primary bg-opacity-10" 
+                                 style="width: 50px; height: 50px; border-radius: 50%;">
+                                <i class="fas fa-clipboard-list text-primary" style="font-size: 1.5rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-3">
+                        <a href="{{ url_for('orders.list_orders') }}?today=true" 
+                           class="btn btn-sm btn-outline-primary w-100 d-flex justify-content-between align-items-center py-2"
+                           style="border-color: #0d6efd; color: #070b12;">
+                            <span>View Details</span>
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Revenue Card -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card stat-card border-start-success border-3 shadow-sm h-100 hover-effect"
+         style="border-left-width: 4px !important; border-left-color: #0f471c !important;">
+        <div class="card-body d-flex flex-column">
+            <div class="row align-items-center g-0 flex-grow-1">
+                <div class="col me-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="text-uppercase fw-bold text-success" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                            <i class="fas fa-calendar-day me-2"></i>Today's Revenue
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success ms-2 pulse-animation" 
+                              style="font-size: 0.7rem; display: none;" id="new-revenue-badge">
+                            <i class="fas fa-bolt me-1"></i>New Sale!
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-baseline">
+                        <div class="h2 mb-0 fw-bold text-gray-800" style="font-size: 2rem;">
+                            <span class="text-success" style="font-size: 0.9rem;">Rwf</span> 
+                            <span id="todays-revenue" style="font-size: 1rem;">
+                                {{ '{:,.1f}'.format(todays_revenue) if todays_revenue is defined else '0.0' }}
+                            </span>
+                        </div>
+                        <div class="ms-2 small text-success fw-bold" id="revenue-change-indicator" style="display: none; font-size: 0.8rem;">
+                            <i class="fas fa-caret-up me-1"></i><span id="revenue-change-amount">0.0</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-xs text-muted" style="font-size: 0.75rem;">
+                        <i class="fas fa-sync-alt me-1" id="revenue-refresh-icon" style="display: none;"></i>
+                        <span id="revenue-updated-text">Updated just now</span>
+                        <button class="btn btn-link p-0 ms-2 text-muted" onclick="updateTodaysRevenue()" style="font-size: 0.7rem;">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="icon-circle bg-success bg-opacity-10" style="width: 50px; height: 50px;">
+                        <i class="fas fa-coins text-success" style="font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-auto pt-3">
+                <a href="{{ url_for('coffee.list_sales') }}" 
+                   class="btn btn-sm btn-outline-warning w-100 d-flex justify-content-between align-items-center py-2"
+                           style="border-color: #09642f; color: #09642f;">
+                            <span>All Transactions</span>
+                            <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+        <!-- Pending Orders Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start-warning border-3 shadow-sm h-100 hover-effect"
+                 style="border-left-width: 4px !important; border-left-color: #ffc107 !important;">
+                <div class="card-body d-flex flex-column">
+                    <div class="row align-items-center g-0 flex-grow-1">
+                        <div class="col me-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="text-uppercase fw-bold text-warning" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                    Pending Orders
+                                </div>
+                                <span class="badge bg-warning bg-opacity-10 text-warning ms-2 pulse-animation" 
+                                      id="new-orders-badge" style="display: none; font-size: 0.7rem;">
+                                    New!
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-baseline">
+                                <div class="h2 mb-0 fw-bold text-gray-800" style="font-size: 2rem;">
+                                    <span id="pending-orders-count">
+                                        {{ pending_orders_count if pending_orders_count is defined else '0' }}
+                                    </span>
+                                </div>
+                                <div class="ms-2 small text-success" id="count-change-indicator" style="display: none; font-size: 0.8rem;">
+                                    +0
+                                </div>
+                            </div>
+                            <div class="mt-2 text-xs text-muted" style="font-size: 0.75rem;">
+                                <i class="fas fa-sync-alt fa-spin me-1" id="refresh-icon" style="display: none;"></i>
+                                <span id="last-updated-text">Updated just now</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="icon-circle bg-warning bg-opacity-10" style="width: 50px; height: 50px;">
+                                <i class="fas fa-hourglass-half text-warning" style="font-size: 1.5rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-3">
+                        <a href="{{ url_for('orders.list_orders', status='pending') }}" 
+                           class="btn btn-sm btn-outline-warning w-100 d-flex justify-content-between align-items-center py-2"
+                           style="border-color: #ffc107; color: #ff071c;">
+                            <span>View Pending Orders</span>
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Items Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start-danger border-3 shadow-sm h-100 hover-effect"
+                 style="border-left-width: 4px !important; border-left-color: #dc3545 !important;">
+                <div class="card-body d-flex flex-column">
+                    <div class="row align-items-center g-0 flex-grow-1">
+                        <div class="col me-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="text-uppercase fw-bold text-danger" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Low Stock
+                                </div>
+                                <span class="badge bg-danger bg-opacity-10 text-danger ms-2 pulse-animation" 
+                                      style="font-size: 0.7rem;" id="low-stock-alert-badge">
+                                    {{ low_stock_items|length }} CRITICAL
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-baseline">
+                                <div class="h2 mb-0 fw-bold text-gray-800" style="font-size: 2rem;">
+                                    {{ low_stock_items|length if low_stock_items is defined else 0 }}
+                                </div>
+                                <div class="ms-2 small text-danger fw-bold" style="font-size: 0.8rem;">
+                                    <i class="fas fa-arrow-trend-down me-1"></i>
+                                    {% if total_products > 0 %}
+                                        {{ ((low_stock_items|length/total_products)*100)|round(1) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="mt-2 text-xs text-muted" style="font-size: 0.75rem;">
+                                <i class="fas fa-boxes me-1"></i>
+                                {{ total_products }} products in inventory
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="icon-circle bg-danger bg-opacity-10" 
+                                 style="width: 50px; height: 50px; border-radius: 50%;">
+                                <i class="fas fa-box-open text-danger" style="font-size: 1.5rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-3">
+                        <a href="{{ url_for('product.list_products') }}" 
+                           class="btn btn-sm btn-outline-danger w-100 d-flex justify-content-between align-items-center py-2"
+                           style="border-color: #dc3545; color: #0e0d0d;">
+                            <span>MANAGE INVENTORY</span>
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Warning message that appears on hover -->
+                <div class="card-footer bg-danger bg-opacity-05 text-danger text-center py-2" 
+                     style="display: none; font-size: 0.8rem; border-top: 1px dashed rgba(200, 219, 186, 0.3);"
+                     id="low-stock-footer">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Row of Cards -->
+    <div class="row">
+        <!-- Total Products Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start-info border-3 shadow-sm h-100 hover-effect"
+                 style="border-left-width: 4px !important; border-left-color: #17a2b8 !important;">
+                <div class="card-body d-flex flex-column">
+                    <div class="row align-items-center g-0 flex-grow-1">
+                        <div class="col me-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="text-uppercase fw-bold text-info" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                    <i class="fas fa-boxes me-2"></i>TOTAL PRODUCTS
+                                </div>
+                                <span class="badge bg-info bg-opacity-10 text-info ms-2" style="font-size: 0.7rem;">
+                                    <i class="fas fa-layer-group me-1"></i>INVENTORY
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-baseline">
+                                <div class="h2 mb-0 fw-bold text-gray-800" style="font-size: 2rem;">
+                                    {{ total_products if total_products is defined else 0 }}
+                                </div>
+                                <div class="ms-2 small text-info fw-bold" style="font-size: 0.8rem;">
+                                    <i class="fas fa-cubes me-1"></i>
+                                    {{ active_products }} active
+                                </div>
+                            </div>
+                            <div class="mt-2 text-xs text-muted" style="font-size: 0.75rem;">
+                                <i class="fas fa-tags me-1"></i>
+                                {{ categories_count }} categories available
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="icon-circle bg-info bg-opacity-10" 
+                                 style="width: 50px; height: 50px; border-radius: 50%;">
+                                <i class="fas fa-warehouse text-info" style="font-size: 1.5rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-3">
+                        <a href="{{ url_for('product.list_products') }}" 
+                           class="btn btn-sm btn-outline-info w-100 d-flex justify-content-between align-items-center py-2"
+                           style="border-color: #17a2b8; color: #17a2b8;">
+                            <span>BROWSE CATALOG</span>
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Inventory summary that appears on hover -->
+                <div class="card-footer bg-info bg-opacity-05 text-center py-2" 
+                     style="display: none; font-size: 0.8rem; border-top: 1px dashed rgba(23, 162, 184, 0.3);"
+                     id="inventory-footer">
+                    <div class="d-flex justify-content-around">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Requisitions Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-start-warning border-3 shadow-sm h-100 hover-effect"
+                 style="border-left-width: 4px !important; border-left-color: #fd7e14 !important;">
+                <div class="card-body d-flex flex-column">
+                    <div class="row align-items-center g-0 flex-grow-1">
+                        <div class="col me-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="text-uppercase fw-bold text-warning" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                                    <i class="fas fa-clipboard-list me-2"></i>PENDING REQUISITIONS
+                                </div>
+                                <span class="badge bg-warning bg-opacity-10 text-warning ms-2 pulse-animation" 
+                                      style="font-size: 0.7rem;">
+                                    {{ pending_requisitions }} URGENT
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-baseline">
+                                <div class="h2 mb-0 fw-bold text-gray-800" style="font-size: 2rem;">
+                                    {{ pending_requisitions if pending_requisitions is defined else 0 }}
+                                </div>
+                                <div class="ms-2 small text-warning fw-bold" style="font-size: 0.8rem;">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ oldest_pending_days }}d old
+                                </div>
+                            </div>
+                            <div class="mt-2 text-xs text-muted" style="font-size: 0.75rem;">
+                                <i class="fas fa-users me-1"></i>
+                                {{ pending_requesters }} requesters waiting
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="icon-circle bg-warning bg-opacity-10" 
+                                 style="width: 50px; height: 50px; border-radius: 50%;">
+                                <i class="fas fa-clipboard-check text-warning" style="font-size: 1.5rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-3">
+                        <a href="{{ url_for('requisitions.list_requisitions') }}" 
+                           class="btn btn-sm btn-outline-warning w-100 d-flex justify-content-between align-items-center py-2"
+                           style="border-color: #fd7e14; color: #fd7e14;">
+                            <span>REVIEW REQUESTS</span>
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Urgency message that appears on hover -->
+                <div class="card-footer bg-warning bg-opacity-05 text-warning text-center py-2" 
+                     style="display: none; font-size: 0.8rem; border-top: 1px dashed rgba(49, 152, 204, 0.3);"
+                     id="requisitions-footer">
+                
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Alerts Card -->
+        <div class="col-xl-6 col-md-12 mb-4">
+            <div class="card shadow-sm h-100 border border-2 hover-effect">
+                <div class="card-header bg-white border-bottom-2 py-3">
+                    <h6 class="m-0 fw-bold text-gray-900" style="font-size: 1.2rem;">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>Inventory Alerts
+                    </h6>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="d-flex align-items-center mb-3">
+                        <!-- Content will be added here -->
+                    </div>
+
+                    <div>
+                        {% if low_stock_items is defined and low_stock_items %}
+                            {% for product in low_stock_items[:3] %}
+                            <div class="d-flex align-items-center mb-3 clickable-row" data-href="{{ url_for('product.edit_product', product_id=product.id) }}">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar-sm">
+                                        <span class="avatar-title bg-light rounded text-danger" style="font-size: 0.875rem;">
+                                            <i class="fas fa-box-open"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0" style="font-size: 0.875rem;">{{ product.name if product.name else 'Unnamed Product' }}</h6>
+                                    <div class="text-muted" style="font-size: 0.75rem;">
+                                        Only {{ product.current_stock if product.current_stock is defined else 0 }} {{ product.unit if product.unit else '' }} left
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <a href="{{ url_for('product.edit_product', product_id=product.id) }}" class="btn btn-sm btn-outline-danger" style="font-size: 0.75rem;">
+                                        Restock
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% if low_stock_items|length > 3 %}
+                            <a href="{{ url_for('product.list_products') }}" class="btn btn-sm btn-block btn-outline-secondary mt-2" style="font-size: 0.875rem;">
+                                View All {{ low_stock_items|length }} Items
+                            </a>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                                <p class="mb-0" style="font-size: 0.875rem;">All products are well stocked</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   <!-- Bottom Row - Tables -->
+<div class="row">
+    <!-- Expanded Recent Requisitions Table -->
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm h-100 border border-2 hover-effect">
+            <div class="card-header bg-white border-bottom-2 py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 fw-bold text-gray-900" style="font-size: 1.2rem;">
+                    <i class="fas fa-clipboard-list text-warning me-2"></i>Recent Requisitions
+                </h6>
+                <a href="{{ url_for('requisitions.new_requisition') }}" class="btn btn-sm btn-outline-warning" style="font-size: 0.875rem;">
+                    <i class="fas fa-plus me-1"></i> New
+                </a>
+            </div>
+            <div class="card-body pt-0 px-2">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="width: 100%;">
+                        <thead class="thead-light">
+                            <tr>
+                                <th class="fw-bold" style="font-size: 0.9375rem; width: 35%;">Product</th>
+                                <th class="fw-bold text-center" style="font-size: 0.9375rem; width: 15%;">Quantity</th>
+                                <th class="fw-bold" style="font-size: 0.9375rem; width: 25%;">Requested by</th>
+                                <th class="fw-bold text-center" style="font-size: 0.9375rem; width: 15%;">Status</th>
+                                <th class="fw-bold text-center" style="font-size: 0.9375rem; width: 10%;">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_requisitions is defined and recent_requisitions %}
+                                {% for req in recent_requisitions %}
+                                <tr class="clickable-row" data-href="{{ url_for('requisitions.new_requisition', id=req.id) }}">
+                                    <td style="font-size: 0.9375rem;">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2">
+                                                <span class="avatar-title bg-light rounded text-dark" style="font-size: 0.75rem;">
+                                                    {{ req.product.name|first if req.product else 'P' }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span class="fw-bold">{{ req.product.name if req.product else 'N/A' }}</span>
+                                                <div class="text-muted" style="font-size: 0.75rem;">{{ req.product.category if req.product and req.product.category else '' }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="fw-bold text-center" style="font-size: 0.9375rem;">{{ req.requested_qty if req.requested_qty else 0 }} {{ req.unit if req.unit else '' }}</td>
+                                    <td style="font-size: 0.9375rem;">{{ req.requester.name if req.requester else 'System' }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{{ 'success' if req.status == 'approved' else 'warning' if req.status == 'pending' else 'danger' }}" style="font-size: 0.75rem;">
+                                            {{ req.status|title if req.status else 'Unknown' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-muted" style="font-size: 0.9375rem;">
+                                        {{ req.date.strftime('%b %d, %Y') }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-2x mb-3 text-gray-300"></i>
+                                        <p class="mb-0" style="font-size: 0.875rem;">No recent requisitions found</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top-2 py-3">
+                <a href="{{ url_for('requisitions.list_requisitions') }}" class="btn btn-sm btn-outline-secondary float-end" style="font-size: 0.875rem;">
+                    View All Requisitions <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS Styles -->
+<style>
+    /* Enhanced Dashboard Styles */
+    .dashboard-header {
+        background: linear-gradient(45deg, #352617 0%, #774615 100%);
+        box-shadow: 0 0.5rem 1rem rgba(237, 224, 107, 0.15);
+        border: 2px solid #352617 !important;
+    }
+    
+    .stat-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        border-radius: 0.5rem;
+        border: 2px solid #e9ecef !important;
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .stat-card:hover, .hover-effect:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .icon-circle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+    }
+    
+    .bg-primary-light { background-color: rgba(78, 115, 223, 0.2); }
+    .bg-success-light { background-color: rgba(28, 200, 138, 0.2); }
+    .bg-warning-light { background-color: rgba(255, 193, 7, 0.2); }
+    .bg-danger-light { background-color: rgba(231, 74, 59, 0.2); }
+    .border-start-orange { border-left-color: #fd7e14 !important; }
+    .text-orange { color: #14fd52 !important; }
+    .bg-orange-light { background-color: rgba(253, 126, 20, 0.2); }
+    .border-start-purple { border-left-color: #6f42c1 !important; }
+    .text-purple { color: #6f42c1 !important; }
+    .bg-purple-light { background-color: rgba(111, 66, 193, 0.2); }
+    .border-start-pink { border-left-color: #e83e8c !important; }
+    .text-pink { color: #e83e8c !important; }
+    .bg-pink-light { background-color: rgba(232, 62, 140, 0.2); }
+    
+    .avatar-sm {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+    }
+    
+    .table {
+        border: 2px solid #dee2e6 !important;
+    }
+    
+    .table th {
+        background-color: #f8f9fa !important;
+        white-space: nowrap;
+        border: 1px solid #dee2e6 !important;
+    }
+    
+    .table td {
+        border: 1px solid #dee2e6 !important;
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+    
+    .border-2 {
+        border-width: 2px !important;
+        border-color: #dee2e6 !important;
+    }
+    
+    /* Clickable row effect */
+    .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.0s;
+    }
+    
+    .clickable-row:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Hover effects for card footers */
+    .stat-card:hover .card-footer {
+        display: block !important;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    /* Pulse animation for alerts */
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .dashboard-header .d-flex {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .dashboard-header .btn {
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .table-responsive {
+            width: 100%;
+            margin-bottom: 15px;
+            overflow-y: hidden;
+            -ms-overflow-style: -ms-autohiding-scrollbar;
+            border: 1px solid #ddd;
+        }
+    }
+</style>
+
+<!-- JavaScript with Fixed Auto-Refresh -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard initialized - starting auto-refresh');
+    
+    // ====================== TODAY'S ORDERS ======================
+    function updateTodayOrders() {
+        const refreshIcon = document.getElementById('today-refresh-icon');
+        const lastUpdatedText = document.getElementById('today-last-updated-text');
+        const ordersCountEl = document.getElementById('today-orders-count');
+        const countChangeIndicator = document.getElementById('today-count-change-indicator');
+        const revenueEl = document.getElementById('today-revenue');
+        const badgeEl = document.getElementById('new-today-orders-badge');
+        
+        refreshIcon.style.display = 'inline-block';
+        lastUpdatedText.textContent = 'Updating...';
+        
+        fetch('{{ url_for("orders.get_today_stats") }}')
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Today orders data:', data);
+                const newCount = data.count || 0;
+                const newRevenue = parseFloat(data.revenue) || 0;
+                const countDiff = newCount - parseInt(ordersCountEl.textContent);
+                
+                // Update count with change indicator
+                if (countDiff !== 0) {
+                    countChangeIndicator.textContent = (countDiff > 0 ? `+${countDiff}` : countDiff);
+                    countChangeIndicator.style.display = 'inline-block';
+                    countChangeIndicator.className = `ms-2 small fw-bold ${countDiff > 0 ? 'text-success' : 'text-danger'}`;
+                    
+                    if (countDiff > 0) {
+                        badgeEl.style.display = 'inline-block';
+                        setTimeout(() => badgeEl.style.display = 'none', 5000);
+                    }
+                }
+                
+                ordersCountEl.textContent = newCount;
+                revenueEl.textContent = newRevenue.toFixed(2);
+                
+                // Update timestamp
+                const now = new Date();
+                lastUpdatedText.textContent = `Updated at ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+                
+                refreshIcon.style.display = 'none';
+                setTimeout(updateTodayOrders, 30000); // Refresh every 30 seconds
+            })
+            .catch(error => {
+                console.error("Today orders update failed:", error);
+                refreshIcon.style.display = 'none';
+                lastUpdatedText.textContent = 'Update failed - retrying';
+                setTimeout(updateTodayOrders, 60000); // Retry after 1 minute on error
+            });
+    }
+
+    // ====================== TODAY'S REVENUE ======================
+    function updateTodaysRevenue() {
+        const refreshIcon = document.getElementById('revenue-refresh-icon');
+        const updatedText = document.getElementById('revenue-updated-text');
+        const badgeElement = document.getElementById('new-revenue-badge');
+        const revenueElement = document.getElementById('todays-revenue');
+        
+        refreshIcon.style.display = 'inline-block';
+        refreshIcon.classList.add('fa-spin');
+        updatedText.textContent = 'Updating...';
+        
+        fetch('{{ url_for("coffee.get_todays_revenue") }}')
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Today revenue data:', data);
+                const newRevenue = parseFloat(data.revenue) || 0;
+                const currentRevenue = parseFloat(revenueElement.textContent) || 0;
+                
+                // Highlight changes
+                if (newRevenue > currentRevenue) {
+                    const increase = (newRevenue - currentRevenue).toFixed(2);
+                    document.getElementById('revenue-change-amount').textContent = increase;
+                    document.getElementById('revenue-change-indicator').style.display = 'inline-block';
+                    
+                    // Show "New Sale!" badge
+                    badgeElement.style.display = 'inline-block';
+                    setTimeout(() => badgeElement.style.display = 'none', 5000);
+                }
+                
+                revenueElement.textContent = newRevenue.toFixed(2);
+                
+                // Update timestamp
+                const now = new Date();
+                updatedText.textContent = `Updated at ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+                
+                refreshIcon.style.display = 'none';
+                refreshIcon.classList.remove('fa-spin');
+                setTimeout(updateTodaysRevenue, 30000); // Refresh every 30 seconds
+            })
+            .catch(error => {
+                console.error("Today revenue update failed:", error);
+                refreshIcon.style.display = 'none';
+                refreshIcon.classList.remove('fa-spin');
+                updatedText.textContent = 'Update failed - retrying';
+                setTimeout(updateTodaysRevenue, 60000); // Retry after 1 minute on error
+            });
+    }
+
+    // ====================== PENDING ORDERS ======================
+    function updatePendingCount() {
+        const refreshIcon = document.getElementById('refresh-icon');
+        const lastUpdatedText = document.getElementById('last-updated-text');
+        const countElement = document.getElementById('pending-orders-count');
+        const badgeElement = document.getElementById('new-orders-badge');
+        
+        refreshIcon.style.display = 'inline-block';
+        lastUpdatedText.textContent = 'Updating...';
+        
+        fetch('{{ url_for("orders.get_pending_count") }}')
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Pending orders data:', data);
+                const newCount = data.count || 0;
+                const currentCount = parseInt(countElement.textContent) || 0;
+                
+                // Show change indicator
+                if (newCount !== currentCount) {
+                    const change = newCount - currentCount;
+                    const changeIndicator = document.getElementById('count-change-indicator');
+                    changeIndicator.textContent = (change > 0 ? `+${change}` : change);
+                    changeIndicator.style.display = 'inline-block';
+                    changeIndicator.className = `ms-2 small fw-bold ${change > 0 ? 'text-success' : 'text-danger'}`;
+                    
+                    if (change > 0) {
+                        badgeElement.style.display = 'inline-block';
+                        setTimeout(() => badgeElement.style.display = 'none', 5000);
+                    }
+                }
+                
+                countElement.textContent = newCount;
+                
+                // Update timestamp
+                const now = new Date();
+                lastUpdatedText.textContent = `Updated at ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+                
+                refreshIcon.style.display = 'none';
+                setTimeout(updatePendingCount, 30000); // Refresh every 30 seconds
+            })
+            .catch(error => {
+                console.error("Pending orders update failed:", error);
+                refreshIcon.style.display = 'none';
+                lastUpdatedText.textContent = 'Update failed - retrying';
+                setTimeout(updatePendingCount, 60000); // Retry after 1 minute on error
+            });
+    }
+
+    // Initialize all auto-refreshes
+    updateTodayOrders();
+    updateTodaysRevenue();
+    updatePendingCount();
+    
+    // Make revenue update function available for manual refresh
+    window.updateTodaysRevenue = updateTodaysRevenue;
+
+    // Make rows clickable
+    document.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', function() {
+            const href = this.getAttribute('data-href');
+            if (href) {
+                window.location.href = href;
+            }
+        });
+    });
+
+    // Generate report button functionality
+    document.getElementById('generate-report').addEventListener('click', function(e) {
+        e.preventDefault();
+        const date = document.getElementById('dashboard-date-filter').value;
+        const productId = document.getElementById('dashboard-product-filter').value;
+        
+        // Show loading state
+        this.innerHTML = `
+            <span class="icon text-white-50">
+                <i class="fas fa-circle-notch fa-spin"></i>
+            </span>
+            <span class="text fw-bold">Generating...</span>
+        `;
+        
+        // Generate report URL
+        let url = "{{ url_for('coffee.sales_report') }}";
+        url += `?date=${date}`;
+        if (productId) {
+            url += `&product_id=${productId}`;
+        }
+        
+        // Trigger download
+        window.location.href = url;
+        
+        // Reset button after delay
+        setTimeout(() => {
+            this.innerHTML = `
+                <span class="icon text-white-50">
+                    <i class="fas fa-download"></i>
+                </span>
+                <span class="text fw-bold">Export Report</span>
+            `;
+        }, 2000);
+    });
+
+    // Date filter change handler
+    document.getElementById('dashboard-date-filter').addEventListener('change', function() {
+        const date = this.value;
+        showToast('Date filter changed to ' + date, 'info');
+    });
+
+    // Product filter change handler
+    document.getElementById('dashboard-product-filter').addEventListener('change', function() {
+        const productId = this.value;
+        if (productId) {
+            const productName = this.options[this.selectedIndex].text;
+            showToast('Filtering by product: ' + productName, 'info');
+        } else {
+            showToast('Showing all products', 'info');
+        }
+    });
+
+    // Function to show toast notifications
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed bottom-0 end-0 m-3`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        const toastInstance = new bootstrap.Toast(toast);
+        toastInstance.show();
+        
+        // Remove toast after it hides
+        toast.addEventListener('hidden.bs.toast', function() {
+            toast.remove();
+        });
+    }
+
+    // Real-time updates simulation
+    function simulateRealTimeUpdates() {
+        // Randomly update some dashboard metrics
+        setInterval(() => {
+            // Update today's orders count with slight random variation
+            const currentOrders = parseInt(document.getElementById('today-orders-count').textContent);
+            const newOrders = currentOrders + Math.floor(Math.random() * 3);
+            document.getElementById('today-orders-count').textContent = newOrders;
+            
+            // Update pending orders count
+            const currentPending = parseInt(document.getElementById('pending-orders-count').textContent);
+            const newPending = Math.max(0, currentPending + Math.floor(Math.random() * 2) - 1);
+            document.getElementById('pending-orders-count').textContent = newPending;
+            
+            // Update active customers count
+            const currentCustomers = parseInt(document.getElementById('active-customers-count').textContent);
+            const newCustomers = Math.max(0, currentCustomers + Math.floor(Math.random() * 3) - 1);
+            document.getElementById('active-customers-count').textContent = newCustomers;
+            
+            // Update popular product count
+            const currentPopular = parseInt(document.getElementById('popular-product-count').textContent);
+            const newPopular = currentPopular + Math.floor(Math.random() * 2);
+            document.getElementById('popular-product-count').textContent = newPopular;
+        }, 10000); // Update every 10 seconds
+    }
+
+    // Initialize real-time updates
+    simulateRealTimeUpdates();
+});
+</script>
+{% endblock %}
+
+
+
+
+
+<!-- ++++++++++++=+++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+    

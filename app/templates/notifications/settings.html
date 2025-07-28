@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Notification Settings</h2>
+    <form method="POST">
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="whatsappEnabled" name="whatsapp_enabled" 
+                   {% if whatsapp_enabled %}checked{% endif %}>
+            <label class="form-check-label" for="whatsappEnabled">Enable WhatsApp Notifications</label>
+        </div>
+        <div class="mb-3">
+            <label for="phoneNumber" class="form-label">Admin Phone Number</label>
+            <input type="text" class="form-control" id="phoneNumber" name="phone_number" 
+                   value="{{ current_app.config.get('ADMIN_WHATSAPP_NUMBER', '') }}">
+        </div>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+    </form>
+</div>
+{% endblock %}

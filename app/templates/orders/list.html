@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Order Management</h2>
+
+    <!-- Top Buttons -->
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <a href="{{ url_for('orders.new_order') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Order
+            </a>
+            <a href="{{ url_for('tables.list_tables') }}" class="btn btn-secondary ml-2">
+                <i class="fas fa-utensils"></i> Manage Tables
+            </a>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="btn-group">
+            {% for s, label, color in [
+                ('all', 'All', 'secondary'),
+                ('pending', 'Pending', 'warning'),
+                ('preparing', 'Preparing', 'info'),
+                ('served', 'Served', 'success'),
+                ('completed', 'Completed', 'primary'),
+                ('cancelled', 'Cancelled', 'danger')] %}
+            <a href="{{ url_for('orders.list_orders', status=s) }}"
+               class="btn btn-sm btn-outline-{{ color }} {% if status == s %}active{% endif %}">
+                {{ label }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Order #</th>
+                    <th>Table</th>
+                    <th>Server</th>
+                    <th>Items</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <th style="min-width: 160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr style="color: #c38e12; background-color: {{
+                    '#FFF3CD' if order.status == 'pending'
+                    else '#D1ECF1' if order.status == 'preparing'
+                    else '#D4EDDA' if order.status == 'served'
+                    else '#F8D7DA' if order.status == 'cancelled'
+                    else '#CCE5FF' }}">
+                    
+                    <td>{{ order.id }}</td>
+
+                    <!-- Table Info -->
+                    <td style="color: black;">
+                        {{ order.table.number }}
+                        {% if order.table.location %}
+                            <small class="text-muted">({{ order.table.location }})</small>
+                        {% endif %}
+                        <span class="ml-1" style="color: {{ 'red' if order.table.is_occupied else 'green' }}; font-weight: bold;">
+                            {{ 'Occupied' if order.table.is_occupied else 'Available' }}
+                        </span>
+                    </td>
+
+                    <td>{{ order.recorder.username }}</td>
+                    <td>{{ order.items|length }}</td>
+                    <td>Rwf:{{ "%.2f"|format(order.total_amount) }}</td>
+
+                    <!-- Status Badge -->
+                    <td>
+                        <span class="badge" style="
+                            {% if order.status == 'completed' %}
+                                background-color: green; color: white;
+                            {% elif order.status == 'pending' %}
+                                background-color: yellow; color: black;
+                            {% elif order.status == 'preparing' %}
+                                background-color: skyblue; color: black;
+                            {% elif order.status == 'served' %}
+                                background-color: chocolate; color: white;
+                            {% elif order.status == 'cancelled' %}
+                                background-color: red; color: white;
+                            {% endif %}">
+                            {{ order.status|title }}
+                        </span>
+                    </td>
+
+                    <td>{{ order.date.strftime('%H:%M') }}</td>
+
+                    <!-- Action Buttons -->
+                    <td class="text-nowrap">
+                        <a href="{{ url_for('orders.view_order', order_id=order.id) }}"
+                           class="btn btn-sm btn-info p-1" title="View">
+                            <i class="fas fa-eye fa-xs"></i>
+                        </a>
+
+                        {% if order.status in ['pending', 'preparing'] %}
+                        <a href="{{ url_for('orders.edit_order', order_id=order.id) }}"
+                           class="btn btn-sm btn-warning p-1" title="Edit">
+                            <i class="fas fa-edit fa-xs"></i>
+                        </a>
+
+                        <form method="post" action="{{ url_for('orders.delete_order', order_id=order.id) }}"
+                              class="d-inline" onsubmit="return confirm('Delete this order?');">
+                            <button type="submit" class="btn btn-sm btn-danger p-1" title="Delete">
+                                <i class="fas fa-trash fa-xs"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if order.status == 'served' %}
+                        <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}"
+                              class="d-inline">
+                            <input type="hidden" name="status" value="completed">
+                            <button type="submit" class="btn btn-sm btn-primary p-1" title="Complete Order">
+                                <i class="fas fa-check fa-xs"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No orders found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

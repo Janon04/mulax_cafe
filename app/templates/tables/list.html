@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Table Management</h2>
+
+    <!-- Action Buttons -->
+    <div class="mb-4 d-flex justify-content-between">
+        <a href="{{ url_for('tables.new_table') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Table
+        </a>
+        <div class="btn-group">
+            <a href="{{ url_for('tables.list_tables') }}" class="btn btn-sm btn-outline-secondary active">
+                All Tables
+            </a>
+        </div>
+    </div>
+
+    <!-- Table Display -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Table #</th>
+                    <th>Capacity</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Current Orders</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for table in tables %}
+                <tr>
+                    <td>{{ table.number }}</td>
+                    <td>{{ table.capacity }}</td>
+                    <td>{{ table.location or '-' }}</td>
+                    
+                    <!-- Table Status -->
+                    <td style="color: {{ 'red' if table.is_occupied else 'green' }}; font-weight: bold;">
+                        {{ 'Occupied' if table.is_occupied else 'Available' }}
+                    </td>
+
+                    <!-- Current Orders -->
+                    <td style="color: black; font-weight: bold;">
+                        {{
+                            table.orders.filter(Order.status.in_(['pending', 'preparing', 'served'])).count()
+                            if table.orders.filter(Order.status.in_(['pending', 'preparing', 'served'])).count() > 0
+                            else 0
+                        }}
+                    </td>
+
+                    <!-- Action Buttons -->
+                    <td>
+                        <!-- Edit Button -->
+                        <a href="{{ url_for('tables.edit_table', table_id=table.id) }}" 
+                           class="btn btn-sm btn-warning" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+
+                        <!-- Toggle Occupied/Available -->
+                        <form method="post" 
+                              action="{{ url_for('tables.toggle_table', table_id=table.id) }}" 
+                              class="d-inline">
+                            <button type="submit" 
+                                    class="btn btn-sm btn-{{ 'success' if table.is_occupied else 'secondary' }}" 
+                                    title="{{ 'Mark Available' if table.is_occupied else 'Mark Occupied' }}">
+                                <i class="fas fa-{{ 'check' if table.is_occupied else 'times' }}"></i>
+                            </button>
+                        </form>
+
+                        <!-- Delete Table -->
+                        <form method="post" 
+                              action="{{ url_for('tables.delete_table', table_id=table.id) }}" 
+                              class="d-inline" 
+                              onsubmit="return confirm('Delete this table?');">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">No tables found. Add your first table.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

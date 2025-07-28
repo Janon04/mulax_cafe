@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Record Kitchen Usage{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <main class="col-md-12 px-md-4 py-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <i class="fas fa-utensils text-primary me-2"></i>Record Kitchen Usage
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{{ url_for('kitchen.inventory') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Inventory
+                    </a>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0">
+                                <i class="fas fa-clipboard-list me-2"></i>Stock Usage Form
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" class="needs-validation" novalidate>
+                                <div class="mb-4">
+                                    <label for="product_id" class="form-label fw-semibold">Product Used</label>
+                                    <select class="form-select form-select-lg" id="product_id" name="product_id" required>
+                                        <option value="">Select Product</option>
+                                        {% for product in products %}
+                                        <option value="{{ product.id }}" 
+                                                data-stock="{{ product.current_stock }}"
+                                                data-unit="{{ product.unit }}"
+                                                {% if product.current_stock <= 0 %}disabled{% endif %}>
+                                            {{ product.name }} (Available: {{ product.current_stock }} {{ product.unit }})
+                                            {% if product.current_stock <= 0 %} - OUT OF STOCK{% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Please select a product
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="quantity" class="form-label fw-semibold">Quantity Used</label>
+                                    <div class="input-group input-group-lg">
+                                        <input type="number" step="0.01" class="form-control" id="quantity" name="quantity" required>
+                                        <span class="input-group-text" id="unit-display">-</span>
+                                    </div>
+                                    <div class="form-text mt-1">
+                                        Current stock: <span id="current-stock" class="fw-bold">0</span> <span id="stock-unit"></span>
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Please enter a valid quantity
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="notes" class="form-label fw-semibold">Usage Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                              placeholder="What was this used for? (e.g., 'Morning breakfast prep')"></textarea>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between border-top pt-4">
+                                    <a href="{{ url_for('kitchen.inventory') }}" class="btn btn-outline-secondary px-4">
+                                        <i class="fas fa-times me-2"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary px-4">
+                                        <i class="fas fa-check me-2"></i> Record Usage
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    (function () {
+        'use strict'
+        const forms = document.querySelectorAll('.needs-validation')
+        
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })();
+
+    // Product selection handling
+    const productSelect = document.getElementById('product_id');
+    const unitDisplay = document.getElementById('unit-display');
+    const currentStock = document.getElementById('current-stock');
+    const stockUnit = document.getElementById('stock-unit');
+    const quantityInput = document.getElementById('quantity');
+    
+    productSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            unitDisplay.textContent = selectedOption.dataset.unit;
+            currentStock.textContent = selectedOption.dataset.stock;
+            stockUnit.textContent = selectedOption.dataset.unit;
+            
+            // Set max attribute to prevent over-usage
+            quantityInput.setAttribute('max', selectedOption.dataset.stock);
+        } else {
+            unitDisplay.textContent = '-';
+            currentStock.textContent = '0';
+            stockUnit.textContent = '';
+            quantityInput.removeAttribute('max');
+        }
+    });
+    
+    // Real-time quantity validation
+    quantityInput.addEventListener('input', function() {
+        const availableStock = parseFloat(currentStock.textContent);
+        const enteredQty = parseFloat(this.value);
+        
+        if (enteredQty > availableStock) {
+            this.setCustomValidity(`Cannot use more than available stock (${availableStock} ${stockUnit.textContent})`);
+            this.classList.add('is-invalid');
+        } else {
+            this.setCustomValidity('');
+            this.classList.remove('is-invalid');
+        }
+    });
+});
+</script>
+{% endblock %}

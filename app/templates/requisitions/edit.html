@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Requisition</h2>
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('requisitions.edit_requisition', id=requisition.id) }}">
+                <div class="mb-3">
+                    <label for="product" class="form-label">Product</label>
+                    <input type="text" class="form-control" id="product" 
+                           value="{{ requisition.product.name }}" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="current_stock" class="form-label">Current Stock</label>
+                    <input type="text" class="form-control" id="current_stock" 
+                           value="{{ requisition.current_stock }} {{ requisition.unit }}" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Requested Quantity</label>
+                    <input type="number" step="0.01" class="form-control" id="quantity" 
+                           name="quantity" value="{{ requisition.requested_qty }}" required
+                           min="0.01" max="1000">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <input type="text" class="form-control" 
+                           value="{{ requisition.status|capitalize }}" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Submitted By</label>
+                    <input type="text" class="form-control" 
+                           value="{{ requisition.requester.username }}" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Date Submitted</label>
+                    <input type="text" class="form-control" 
+                           value="{{ requisition.date.strftime('%Y-%m-%d %H:%M') }}" readonly>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Update Requisition</button>
+                <a href="{{ url_for('requisitions.new_requisition') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

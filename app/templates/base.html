@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{% block title %}Mulax Cafe' Management System{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <style>
+        :root {
+            /* Professional Color Scheme */
+            --primary-900: #2E2318;  /* Dark espresso */
+            --primary-800: #5A3410;  /* Rich coffee */
+            --primary-700: #7A4F28;  /* Medium roast */
+            --primary-600: #9C7449;  /* Light roast */
+            --primary-500: #C89F6D;  /* Coffee cream */
+            --primary-400: #D1B899;  /* Light cream */
+            --primary-300: #E3D5C1;  /* Foam */
+            --primary-200: #F0E9DF;  /* Milk foam */
+            --primary-100: #F9F5F2;  /* Steamed milk */
+
+            /* Accent Colors */
+            --accent-500: #E09A3E;   /* Caramel */
+            --accent-400: #F3D6A8;   /* Light caramel */
+            
+            /* Status Colors */
+            --success-500: #3A7D44;  /* Matcha green */
+            --danger-500: #C64745;   /* Berry red */
+            --warning-500: #D4A017;  /* Honey yellow */
+            --info-500: #afc0c7;     /* Blueberry */
+
+            /* Typography */
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            
+            /* Dimensions */
+            --sidebar-width: 280px;
+            --sidebar-mini-width: 80px;
+            --header-height: 70px;
+            --topbar-height: 70px;
+            --content-padding: 2rem;
+            
+            /* Effects */
+            --transition-base: 0.2s ease;
+            --transition-fast: 0.1s ease;
+            --shadow-sm: 0 1px 3px rgba(46, 35, 24, 0.08);
+            --shadow-md: 0 4px 12px rgba(46, 35, 24, 0.1);
+            --shadow-lg: 0 8px 24px rgba(46, 35, 24, 0.12);
+            --border-radius-sm: 6px;
+            --border-radius: 10px;
+            --border-radius-lg: 14px;
+        }
+
+        /* Base Styles */
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--primary-100);
+            color: var(--primary-900);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        a {
+            color: var(--primary-700);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        a:hover {
+            color: var(--primary-800);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            color: var(--primary-900);
+            line-height: 1.3;
+            margin-bottom: 1rem;
+        }
+
+        /* Login Page Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--primary-100);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            background-color: white;
+        }
+
+        .login-brand {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-brand i {
+            font-size: 2.5rem;
+            color: var(--accent-500);
+        }
+
+        .login-brand h1 {
+            color: var(--primary-800);
+            margin-top: 0.5rem;
+        }
+
+        /* Layout Structure */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Top Bar - Professional */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--sidebar-width);
+            height: var(--topbar-height);
+            background: white;
+            box-shadow: var(--shadow-sm);
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--content-padding);
+            transition: left var(--transition-base);
+            border-bottom: 1px solid var(--primary-200);
+        }
+
+        .main-content.collapsed .top-bar {
+            left: var(--sidebar-mini-width);
+        }
+
+        .welcome-message h4 {
+            font-weight: 500;
+            color: var(--primary-700);
+            margin: 0;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-200);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Sidebar - Professional */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary-800) 0%, var(--primary-900) 100%);
+            color: white;
+            transition: all var(--transition-base);
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-mini-width);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sidebar-brand i {
+            color: var(--accent-500);
+            font-size: 1.8rem;
+        }
+
+        .sidebar-nav-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Navigation Links - Professional */
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.85rem 1.5rem;
+            color: var(--primary-400);
+            transition: all var(--transition-fast);
+            position: relative;
+            margin: 0.25rem 0.75rem;
+            border-radius: var(--border-radius-sm);
+        }
+
+        .sidebar-nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar-nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.12);
+            font-weight: 500;
+        }
+
+        .sidebar-nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background-color: var(--accent-500);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .sidebar-nav-link i {
+            font-size: 1.1rem;
+            margin-right: 0.75rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-nav-link span {
+            transition: opacity var(--transition-base), transform var(--transition-base);
+        }
+
+        .sidebar.collapsed .sidebar-nav-link span {
+            opacity: 0;
+            position: absolute;
+            transform: translateX(10px);
+        }
+
+        /* Main Content - Professional */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            transition: margin-left var(--transition-base);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content.collapsed {
+            margin-left: var(--sidebar-mini-width);
+        }
+
+        .content-wrapper {
+            padding-top: var(--topbar-height);
+            flex: 1;
+        }
+
+        .content-container {
+            padding: var(--content-padding);
+        }
+
+        /* Cards - Professional */
+        .card {
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid var(--primary-200);
+            padding: 1.25rem 1.5rem;
+        }
+
+        /* Buttons - Professional */
+        .btn {
+            border-radius: var(--border-radius-sm);
+            padding: 0.65rem 1.25rem;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-700);
+            border-color: var(--primary-800);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-800);
+            border-color: var(--primary-900);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-accent {
+            background-color: var(--accent-500);
+            border-color: var(--accent-500);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background-color: var(--accent-400);
+            border-color: var(--accent-400);
+            color: white;
+        }
+
+        /* Tables - Professional */
+        .table {
+            --bs-table-bg: transparent;
+            --bs-table-striped-bg: var(--primary-100);
+        }
+
+        .table > :not(:first-child) {
+            border-top: 1px solid var(--primary-200);
+        }
+
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            color: var(--primary-600);
+            background-color: var(--primary-100);
+            padding: 0.75rem 1rem;
+        }
+
+        .table td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+            border-top: 1px solid var(--primary-200);
+        }
+
+        /* Form Styles */
+        .form-control:focus {
+            border-color: var(--accent-500);
+            box-shadow: 0 0 0 0.25rem rgba(224, 154, 62, 0.25);
+        }
+
+        /* Alert Styles */
+        .alert {
+            border-radius: var(--border-radius-sm);
+            border: none;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+            }
+
+            .top-bar {
+                left: 0 !important;
+            }
+
+            .mobile-toggle {
+                display: flex !important;
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                z-index: 1050;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                align-items: center;
+                justify-content: center;
+                background-color: var(--primary-700);
+                color: white;
+                box-shadow: var(--shadow-md);
+                border: none;
+            }
+
+            .content-container {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--primary-200);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-600);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-700);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid rgba(224, 154, 62, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--accent-500);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+        <!-- App Interface (only shown when logged in) -->
+        <div class="app-container">
+            <!-- Mobile Toggle Button -->
+            <button class="mobile-toggle d-none" id="mobileSidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <a href="#" class="sidebar-brand">
+                        <i class="bi bi-cup-hot-fill"></i>
+                        <span>Mulax Cafe'</span>
+                    </a>
+                </div>
+                <div class="sidebar-nav-container">
+                    <ul class="sidebar-nav">
+                        {% if current_user.role in ['admin', 'manager'] %}
+    <li class="nav-item">
+        <a class="sidebar-nav-link" href="{{ url_for('main.dashboard') }}">
+            <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
+        </a>
+    </li>
+{% endif %}
+                        <li class="nav-item">
+                            <a class="sidebar-nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#ordersMenu" aria-expanded="false">
+                                <i class="fas fa-box"></i><span>Quick Orders</span>
+                                <i class="fas fa-caret-down float-end"></i>
+                            </a>
+                            <div id="ordersMenu" class="collapse">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="sidebar-nav-link" href="{{ url_for('orders.list_orders') }}">
+                                            <i class="fas fa-list"></i><span>All Orders</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="sidebar-nav-link" href="{{ url_for('orders.new_order') }}">
+                                            <i class="fas fa-plus-circle"></i><span>Create Order</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="sidebar-nav-link d-flex align-items-center" href="#productSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="productSubmenu">
+                                <i class="fas fa-box-open"></i>
+                                <span>Products</span>
+                                <i class="fas fa-chevron-down ms-auto menu-toggle"></i>
+                            </a>
+                            <div class="collapse sidebar-submenu" id="productSubmenu">
+                                <ul class="sidebar-nav">
+                                    <li class="nav-item">
+                                        <a class="sidebar-nav-link" href="{{ url_for('product.list_products') }}">
+                                            <i class="fas fa-list"></i><span>Product List</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="sidebar-nav-link" href="{{ url_for('product.new_product') }}">
+                                            <i class="fas fa-plus-square"></i><span>Add Product</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        
+                        <!-- Table Management Section -->
+                        <li class="nav-item">
+                            <a class="sidebar-nav-link d-flex align-items-center" href="#tablesSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="tablesSubmenu">
+                                <i class="fas fa-table"></i>
+                                <span>Tables</span>
+                                <i class="fas fa-chevron-down ms-auto menu-toggle"></i>
+                            </a>
+                            <div class="collapse sidebar-submenu" id="tablesSubmenu">
+                                <ul class="sidebar-nav">
+                                    <li class="nav-item">
+                                        <a class="sidebar-nav-link" href="{{ url_for('tables.list_tables') }}">
+                                            <i class="fas fa-list"></i><span>All Tables</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="sidebar-nav-link" href="{{ url_for('tables.new_table') }}">
+                                            <i class="fas fa-plus-circle"></i><span>Add Table</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="sidebar-nav-link" href="{{ url_for('requisitions.list_requisitions') }}">
+                                <i class="fas fa-clipboard-list"></i><span>Requisitions</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="sidebar-nav-link" href="{{ url_for('coffee.list_sales') }}">
+                                <i class="fas fa-coffee"></i><span>Coffee Sales</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="sidebar-nav-link" href="{{ url_for('kitchen.inventory') }}">
+                                <i class="fas fa-utensils"></i><span>Kitchen</span>
+                            </a>
+                        </li>
+                        {% if current_user.role in ['manager'] %}
+                        <li class="nav-item">
+                            <a class="sidebar-nav-link" href="{{ url_for('auth.manage_users') }}">
+                                <i class="fas fa-users-cog"></i><span>User Management</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="sidebar-footer p-3">
+                    <button class="sidebar-toggle btn btn-sm btn-outline-light w-100" id="sidebarToggle">
+                        <i class="bi bi-chevron-double-left"></i> <span>Collapse</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content" id="main-content">
+                <div class="content-wrapper">
+                    <div class="top-bar">
+                        <div class="welcome-message">
+                            <h4>Welcome, {{ current_user.username }}!</h4>
+                        </div>
+                        <div class="user-profile">
+                            <!-- <img src="{{ url_for('static', filename='images') }}" alt="User Avatar" class="user-avatar"> -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user-circle me-1"></i> Account
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content-container">
+                        <!-- Flash Messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        {% block content %}{% endblock %}
+                    </div>
+                </div>
+            </main>
+        </div>
+    {% else %}
+        <!-- Login/Splash Page (shown when not logged in) -->
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-brand">
+                    <i class="bi bi-cup-hot-fill"></i>
+                    <h1>Mulax Cafe'</h1>
+                </div>
+                
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    {% block auth_content %}
+                        <!-- This block will be overridden by auth/login.html -->
+                        <form method="POST" action="{{ url_for('auth.login') }}">
+                            {{ form.hidden_tag() }}
+                            
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                {{ form.username(class="form-control", id="username", placeholder="Enter your username") }}
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.username.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                {{ form.password(class="form-control", id="password", placeholder="Enter your password") }}
+                                {% if form.password.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.password.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                {{ form.remember_me(class="form-check-input", id="remember") }}
+                                <label class="form-check-label" for="remember">Remember me</label>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-sign-in-alt me-2"></i> Login
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div class="mt-3 text-center">
+                            {% if config.ENABLE_REGISTRATION %}
+                                {% if current_user.is_authenticated %}
+        <a href="{{ url_for('auth.edit_user', user_id=current_user.id) }}" class="text-muted">Edit My Account</a>
+    {% endif %}
+    Register</a>
+                            {% endif %}
+                        </div>
+                    {% endblock %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Only run these scripts if the user is authenticated
+                {% if current_user.is_authenticated %}
+                    // Sidebar toggle functionality
+                    const sidebarToggle = document.getElementById('sidebarToggle');
+                    const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+                    const sidebar = document.getElementById('sidebar');
+                    const mainContent = document.getElementById('main-content');
+
+                    function toggleSidebar() {
+                        sidebar.classList.toggle('collapsed');
+                        mainContent.classList.toggle('collapsed');
+                        
+                        // Update toggle button icon
+                        const icon = sidebarToggle.querySelector('i');
+                        if (sidebar.classList.contains('collapsed')) {
+                            icon.classList.remove('bi-chevron-double-left');
+                            icon.classList.add('bi-chevron-double-right');
+                            sidebarToggle.querySelector('span').textContent = 'Expand';
+                        } else {
+                            icon.classList.remove('bi-chevron-double-right');
+                            icon.classList.add('bi-chevron-double-left');
+                            sidebarToggle.querySelector('span').textContent = 'Collapse';
+                        }
+                    }
+
+                    if (sidebarToggle) {
+                        sidebarToggle.addEventListener('click', toggleSidebar);
+                    }
+
+                    if (mobileSidebarToggle) {
+                        mobileSidebarToggle.addEventListener('click', function() {
+                            sidebar.classList.toggle('show');
+                        });
+                    }
+
+                    // Responsive behavior
+                    window.addEventListener('resize', function() {
+                        if (window.innerWidth > 992) {
+                            sidebar.classList.remove('show');
+                        }
+                    });
+
+                    // Initialize tooltips
+                    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                        return new bootstrap.Tooltip(tooltipTriggerEl);
+                    });
+
+                    // Submenu arrow rotation
+                    document.querySelectorAll('.sidebar-nav-link[data-bs-toggle="collapse"]').forEach(link => {
+                        link.addEventListener('click', function() {
+                            const icon = this.querySelector('.menu-toggle');
+                            if (icon) {
+                                icon.classList.toggle('fa-chevron-down');
+                                icon.classList.toggle('fa-chevron-up');
+                            }
+                        });
+                    });
+                {% endif %}
+
+                // Enable Bootstrap tooltips everywhere
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+
+                // Enable Bootstrap popovers everywhere
+                var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+                var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                    return new bootstrap.Popover(popoverTriggerEl);
+                });
+
+                // Dismiss alerts after 5 seconds
+                setTimeout(function() {
+                    var alerts = document.querySelectorAll('.alert');
+                    alerts.forEach(function(alert) {
+                        var bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    });
+                }, 5000);
+            });
+        </script>
+
+        {% block scripts %}{% endblock %}
+    </body>
+    </html>

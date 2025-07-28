@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Order #{{ order.id }}</h2>
+        <span class="badge badge-{{
+            'warning' if order.status == 'pending' 
+            else 'info' if order.status == 'preparing' 
+            else 'success' if order.status == 'served' 
+            else 'danger' if order.status == 'cancelled' 
+            else 'primary' 
+        }}">
+            {{ order.status|title }}
+        </span>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Table Number:</dt>
+                        <dd class="col-sm-8">{{ order.table_number }}</dd>
+                        
+                        <dt class="col-sm-4">Server:</dt>
+                        <dd class="col-sm-8">{{ recorded_by_user }}</dd>
+                        
+                        <dt class="col-sm-4">Created:</dt>
+                        <dd class="col-sm-8">{{ order.date.strftime('%Y-%m-%d %H:%M') }}</dd>
+                        
+                        {% if order.served_at %}
+    <dt class="col-sm-4">Served:</dt>
+    <dd class="col-sm-8">
+        {{ order.served_at.strftime('%Y-%m-%d %H:%M') }}
+        {% if order.served_by_user %}
+            by {{ order.served_by_user.username }}
+        {% else %}
+            by Unknown
+        {% endif %}
+    </dd>
+{% endif %}
+
+                        
+                        {% if order.notes %}
+                        <dt class="col-sm-4">Notes:</dt>
+                        <dd class="col-sm-8">{{ order.notes }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Order Summary</h5>
+                    <span class="h5 mb-0">${{ "%.2f"|format(order.total_amount) }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-right">Qty</th>
+                                <th class="text-right">Price</th>
+                                <th class="text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items %}
+                            <tr>
+                                <td>
+                                    {{ item.product.name }}
+                                    {% if item.special_instructions %}
+                                    <br><small class="text-muted">{{ item.special_instructions }}</small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right">{{ item.quantity }}</td>
+                                <td class="text-right">${{ "%.2f"|format(item.unit_price) }}</td>
+                                <td class="text-right">${{ "%.2f"|format(item.quantity * item.unit_price) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-flex justify-content-between">
+        <div>
+            <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Orders
+            </a>
+            
+            {% if order.status in ['pending', 'preparing'] %}
+            <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-warning ml-2">
+                <i class="fas fa-edit"></i> Edit Order
+            </a>
+            {% endif %}
+        </div>
+        
+        {% if order.status not in ['completed', 'cancelled'] %}
+        <div class="btn-group">
+            {% if order.status == 'pending' %}
+            <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}">
+                <input type="hidden" name="status" value="preparing">
+                <button type="submit" class="btn btn-info">
+                    <i class="fas fa-utensils"></i> Start Preparing
+                </button>
+            </form>
+            {% endif %}
+            
+            {% if order.status == 'preparing' %}
+            <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}">
+                <input type="hidden" name="status" value="served">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check"></i> Mark as Served
+                </button>
+            </form>
+            {% endif %}
+            
+            {% if order.status == 'served' %}
+            <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}">
+                <input type="hidden" name="status" value="completed">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check-circle"></i> Complete Order
+                </button>
+            </form>
+            {% endif %}
+            
+            {% if order.status in ['pending', 'preparing'] %}
+            <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}" 
+                  onsubmit="return confirm('Cancel this order?');">
+                <input type="hidden" name="status" value="cancelled">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-ban"></i> Cancel Order
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h4>Add New Product</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <!-- Form fields here -->
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="{{ url_for('inventory') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

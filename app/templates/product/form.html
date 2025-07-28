@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-box-seam me-2"></i>
+                        {% if product %}Edit{% else %}Add New{% endif %} Product
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% if product %}{{ url_for('product.edit_product', product_id=product.id) }}{% else %}{{ url_for('product.new_product') }}{% endif %}" enctype="multipart/form-data">
+                        <!-- Category & Product Code -->
+                        <div class="mb-4">
+                            <h5 class="mb-3 text-primary">
+                                <i class="bi bi-tags me-2"></i>
+                                Product Classification
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="category" id="categorySelect" required>
+                                        <option value="">Select Category</option>
+                                        <option value="food" {% if product and product.category == 'food' %}selected{% endif %}>Food</option>
+                                        <option value="drinks" {% if product and product.category == 'drinks' %}selected{% endif %}>Drinks</option>
+                                        <option value="furniture" {% if product and product.category == 'furniture' %}selected{% endif %}>Furniture</option>
+                                        <option value="materials" {% if product and product.category == 'materials' %}selected{% endif %}>Materials</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Product Code</label>
+                                    <input type="text" class="form-control" name="sku" value="{{ product.sku if product }}" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="mb-3 text-primary">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Product Details
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="name" value="{{ product.name if product }}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Brand</label>
+                                    <input type="text" class="form-control" name="brand" value="{{ product.brand if product }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Description</label>
+                                    <textarea class="form-control" name="description" rows="2">{{ product.description if product }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inventory & Pricing -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card h-100 border-light">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0 text-primary">
+                                            <i class="bi bi-box-seam me-2"></i>
+                                            Inventory
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Stock</label>
+                                                <input type="number" step="0.01" class="form-control" name="current_stock" value="{{ product.current_stock if product else 0 }}">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Unit <span class="text-danger">*</span></label>
+                                                <select class="form-select" name="unit" required>
+                                                    <option value="kg" {% if product and product.unit == 'kg' %}selected{% endif %}>kg</option>
+                                                    <option value="g" {% if product and product.unit == 'g' %}selected{% endif %}>g</option>
+                                                    <option value="L" {% if product and product.unit == 'L' %}selected{% endif %}>L</option>
+                                                    <option value="ml" {% if product and product.unit == 'ml' %}selected{% endif %}>ml</option>
+                                                    <option value="unit" {% if product and product.unit == 'unit' %}selected{% endif %}>Unit</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Min Stock</label>
+                                                <input type="number" step="0.01" class="form-control" name="min_stock" value="{{ product.min_stock if product else 5 }}">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Reorder Qty</label>
+                                                <input type="number" step="0.01" class="form-control" name="reorder_qty" value="{{ product.reorder_qty if product }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-light">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0 text-primary">
+                                            <i class="bi bi-tag me-2"></i>
+                                            Pricing
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Cost Price (₵)</label>
+                                                <input type="number" step="0.01" class="form-control" name="cost_price" value="{{ product.cost_price if product else 0 }}">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Selling Price (₵)</label>
+                                                <input type="number" step="0.01" class="form-control" name="unit_price" value="{{ product.unit_price if product else 0 }}">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Tax Rate (%)</label>
+                                                <select class="form-select" name="tax_rate">
+                                                    <option value="0" {% if product and product.tax_rate == 0 %}selected{% endif %}>0%</option>
+                                                    <option value="5" {% if product and product.tax_rate == 5 %}selected{% endif %}>5%</option>
+                                                    <option value="12.5" {% if product and product.tax_rate == 12.5 %}selected{% endif %}>12.5%</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between border-top pt-3">
+                            <a href="{{ url_for('product.list_products') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> {% if product %}Update{% else %}Save{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

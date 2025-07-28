@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Table {{ table.number }}</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('tables.edit_table', table_id=table.id) }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="form-group">
+                    {{ form.number.label(class="form-control-label") }}
+                    {{ form.number(class="form-control") }}
+                    {% if form.number.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.number.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.capacity.label(class="form-control-label") }}
+                    {{ form.capacity(class="form-control") }}
+                    {% if form.capacity.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.capacity.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.location.label(class="form-control-label") }}
+                    {{ form.location(class="form-control") }}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('tables.list_tables') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            {% if product %}Edit{% else %}Add New{% endif %} Product
+        </h1>
+        <a href="{{ url_for('product.list_products') }}" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Back to Products
+        </a>
+    </div>
+
+    <!-- Product Form Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Product Details</h6>
+            {% if product %}
+                <span class="badge badge-{{ 'success' if product.current_stock > product.min_stock else 'danger' }}">
+                    Stock: {{ product.current_stock }} {{ product.unit }}
+                </span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{% if product %}{{ url_for('product.edit_product', product_id=product.id) }}{% else %}{{ url_for('product.new_product') }}{% endif %}">
+                {{ form.hidden_tag() }}
+                
+                <div class="form-row">
+                    <!-- Basic Information -->
+                    <div class="form-group col-md-6">
+                        <label for="name">Product Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ product.name if product else '' }}" required>
+                    </div>
+                    
+                    <div class="form-group col-md-3">
+                        <label for="category">Category *</label>
+                        <select class="form-control" id="category" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="food" {% if product and product.category == 'food' %}selected{% endif %}>Food</option>
+                            <option value="drinks" {% if product and product.category == 'drinks' %}selected{% endif %}>Drinks</option>
+                            <option value="furniture" {% if product and product.category == 'furniture' %}selected{% endif %}>Furniture</option>
+                            <option value="materials" {% if product and product.category == 'materials' %}selected{% endif %}>Materials</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group col-md-3">
+                        <label for="unit">Unit of Measure *</label>
+                        <select class="form-control" id="unit" name="unit" required>
+                            <option value="">Select Unit</option>
+                            <option value="kg" {% if product and product.unit == 'kg' %}selected{% endif %}>Kilogram (kg)</option>
+                            <option value="g" {% if product and product.unit == 'g' %}selected{% endif %}>Gram (g)</option>
+                            <option value="l" {% if product and product.unit == 'l' %}selected{% endif %}>Liter (l)</option>
+                            <option value="ml" {% if product and product.unit == 'ml' %}selected{% endif %}>Milliliter (ml)</option>
+                            <option value="pc" {% if product and product.unit == 'pc' %}selected{% endif %}>Piece (pc)</option>
+                            <option value="box" {% if product and product.unit == 'box' %}selected{% endif %}>Box</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="brand">Brand</label>
+                        <input type="text" class="form-control" id="brand" name="brand" 
+                               value="{{ product.brand if product else '' }}">
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="sku">SKU</label>
+                        <input type="text" class="form-control" id="sku" name="sku" 
+                               value="{{ product.sku if product else '' }}" readonly>
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="supplier">Supplier</label>
+                        <input type="text" class="form-control" id="supplier" name="supplier" 
+                               value="{{ product.supplier if product else '' }}">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea class="form-control" id="description" name="description" 
+                              rows="2">{{ product.description if product else '' }}</textarea>
+                </div>
+                
+                <hr class="my-4">
+                
+                <!-- Pricing Information -->
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label for="cost_price">Cost Price (₵)</label>
+                        <input type="number" step="0.01" min="0" class="form-control" 
+                               id="cost_price" name="cost_price" 
+                               value="{{ '%.2f'|format(product.cost_price) if product and product.cost_price else '0.00' }}">
+                    </div>
+                    
+                    <div class="form-group col-md-3">
+                        <label for="unit_price">Selling Price (₵) *</label>
+                        <input type="number" step="0.01" min="0" class="form-control" 
+                               id="unit_price" name="unit_price" required
+                               value="{{ '%.2f'|format(product.unit_price) if product and product.unit_price else '0.00' }}">
+                    </div>
+                    
+                    <div class="form-group col-md-3">
+                        <label for="tax_rate">Tax Rate (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" class="form-control" 
+                               id="tax_rate" name="tax_rate" 
+                               value="{{ '%.2f'|format(product.tax_rate) if product and product.tax_rate else '0.00' }}">
+                    </div>
+                    
+                    <div class="form-group col-md-3">
+                        <label for="current_stock">Current Stock *</label>
+                        <input type="number" step="0.01" min="0" class="form-control" 
+                               id="current_stock" name="current_stock" required
+                               value="{{ '%.2f'|format(product.current_stock) if product else '0.00' }}">
+                    </div>
+                </div>
+                
+                <!-- Stock Management -->
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label for="min_stock">Minimum Stock Level</label>
+                        <input type="number" step="0.01" min="0" class="form-control" 
+                               id="min_stock" name="min_stock" 
+                               value="{{ '%.2f'|format(product.min_stock) if product and product.min_stock else '5.00' }}">
+                        <small class="form-text text-muted">Low stock alert threshold</small>
+                    </div>
+                    
+                    <div class="form-group col-md-3">
+                        <label for="reorder_qty">Reorder Quantity</label>
+                        <input type="number" step="0.01" min="0" class="form-control" 
+                               id="reorder_qty" name="reorder_qty" 
+                               value="{{ '%.2f'|format(product.reorder_qty) if product and product.reorder_qty else '0.00' }}">
+                        <small class="form-text text-muted">Suggested reorder amount</small>
+                    </div>
+                    
+                    <div class="form-group col-md-6">
+                        <label for="remarks">Remarks</label>
+                        <input type="text" class="form-control" id="remarks" name="remarks" 
+                               value="{{ product.remarks if product else '' }}">
+                    </div>
+                </div>
+                
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {% if product %}Update{% else %}Create{% endif %} Product
+                    </button>
+                    <a href="{{ url_for('product.list_products') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    
+                    {% if product %}
+                    <button type="button" class="btn btn-danger float-right" data-toggle="modal" data-target="#deleteModal">
+                        <i class="fas fa-trash"></i> Delete Product
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Stock Movement History -->
+    {% if product %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Stock Movement History</h6>
+            <button class="btn btn-sm btn-success" data-toggle="modal" data-target="#addStockModal">
+                <i class="fas fa-plus"></i> Add Stock
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>In</th>
+                            <th>Out</th>
+                            <th>Balance</th>
+                            <th>User</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in movements %}
+                        <tr>
+                            <td>{{ movement.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <span class="badge badge-{{ 'success' if movement.stock_in > 0 else 'danger' }}">
+                                    {{ movement.movement_type|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td class="text-success">{{ movement.stock_in if movement.stock_in > 0 else '-' }}</td>
+                            <td class="text-danger">{{ movement.stock_out if movement.stock_out > 0 else '-' }}</td>
+                            <td>{{ movement.closing_stock }}</td>
+                            <td>{{ movement.user.username }}</td>
+                            <td>{{ movement.notes or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No stock movements recorded</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Product Modal -->
+{% if product %}
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{ product.name }}</strong>? This action cannot be undone.</p>
+                <p class="text-danger">All stock movement history for this product will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('product.delete_product', id=product.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Permanently
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Add Stock Modal -->
+{% if product %}
+<div class="modal fade" id="addStockModal" tabindex="-1" role="dialog" aria-labelledby="addStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('product.add_stock', id=product.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStockModalLabel">Add Stock to {{ product.name }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="quantity">Quantity to Add</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="quantity" name="quantity" required>
+                            <div class="input-group-append">
+                                <span class="input-group-text">{{ product.unit }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Stock
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Auto-focus the first field
+    $('#name').focus();
+    
+    // Format currency fields on blur
+    $('input[type="number"]').on('blur', function() {
+        if (this.value && !isNaN(this.value)) {
+            this.value = parseFloat(this.value).toFixed(2);
+        }
+    });
+    
+    // Generate SKU when category changes (for new products)
+    {% if not product %}
+    $('#category').change(function() {
+        if (!$('#sku').val()) {
+            const prefix = {
+                'food': 'FOD', 
+                'drinks': 'DRK', 
+                'furniture': 'FUR', 
+                'materials': 'MAT'
+            }[this.value] || 'PRD';
+            
+            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            $('#sku').val(prefix + '-' + dateStr + '-XXXX');
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

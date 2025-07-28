@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Order #{{ order.id }}</h2>
+    <p class="text-muted">Status: {{ order.status|title }}</p>
+    
+    <form method="post">
+        {{ form.hidden_tag() }}
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="table_number">Table Number</label>
+                    <input type="text" class="form-control" id="table_number" name="table_number" 
+                           required value="{{ order.table_number }}">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="notes">Order Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="1">{{ order.notes or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <h4 class="mb-3">Order Items</h4>
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>${{ "%.2f"|format(product.unit_price) }}</td>
+                        <td>
+                            {% set item = order.items|selectattr('product_id', 'equalto', product.id)|first %}
+                            <input type="number" name="product_{{ product.id }}" 
+                                   class="form-control quantity-input" min="0" 
+                                   value="{{ item.quantity if item else 0 }}"
+                                   data-price="{{ product.unit_price }}">
+                        </td>
+                        <td class="subtotal">
+                            ${{ "%.2f"|format((item.quantity * item.unit_price) if item else 0) }}
+                        </td>
+                        <td>
+                            <input type="text" name="notes_{{ product.id }}" 
+                                   class="form-control" 
+                                   value="{{ item.special_instructions if item else '' }}"
+                                   placeholder="Special instructions">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-active">
+                        <th colspan="3">Total</th>
+                        <th id="order-total">${{ "%.2f"|format(order.total_amount) }}</th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Update Order
+            </button>
+            <a href="{{ url_for('orders.view_order', order_id=order.id) }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    
+    function calculateTotal() {
+        let total = 0;
+        
+        quantityInputs.forEach(input => {
+            const row = input.closest('tr');
+            const quantity = parseInt(input.value) || 0;
+            const price = parseFloat(input.dataset.price);
+            const subtotal = quantity * price;
+            
+            row.querySelector('.subtotal').textContent = '$' + subtotal.toFixed(2);
+            total += subtotal;
+        });
+        
+        document.getElementById('order-total').textContent = '$' + total.toFixed(2);
+    }
+    
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', calculateTotal);
+        input.addEventListener('input', calculateTotal);
+    });
+    
+    // Initial calculation
+    calculateTotal();
+});
+</script>
+{% endblock %}

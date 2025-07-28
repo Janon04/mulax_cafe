@@ -1,0 +1,64 @@
+2025-07-28 16:31:36,236 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:120]
+2025-07-28 16:31:36,346 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:174]
+2025-07-28 16:31:38,776 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:209]
+2025-07-28 16:31:38,814 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:61]
+2025-07-28 16:31:42,709 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:120]
+2025-07-28 16:31:42,787 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:174]
+2025-07-28 16:31:44,998 INFO: Scheduler shutdown complete [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:184]
+2025-07-28 16:38:00,601 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:209]
+2025-07-28 16:38:00,676 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:61]
+2025-07-28 16:38:05,102 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:120]
+2025-07-28 16:38:05,218 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:174]
+2025-07-28 16:38:06,689 INFO: Scheduler shutdown complete [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:184]
+2025-07-28 16:39:03,285 INFO: SMTP Server resolved to IP: 74.125.71.109 [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\services\notifications.py:53]
+2025-07-28 16:40:35,193 INFO: SMTP Server resolved to IP: 74.125.71.109 [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\services\notifications.py:53]
+2025-07-28 16:59:09,829 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:209]
+2025-07-28 16:59:09,922 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:61]
+2025-07-28 16:59:15,408 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:120]
+2025-07-28 16:59:15,518 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:174]
+2025-07-28 17:00:19,544 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:209]
+2025-07-28 17:00:19,608 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:61]
+2025-07-28 17:00:24,412 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:120]
+2025-07-28 17:00:24,552 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:174]
+2025-07-28 17:00:26,104 INFO: Scheduler shutdown complete [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:184]
+2025-07-28 17:16:45,370 ERROR: Unhandled Exception: Could not build url for endpoint 'coffee.index'. Did you mean 'coffee.new_sale' instead? [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\utils\error_handlers.py:38]
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\routes\orders.py", line 28, in list_orders
+    return render_template('orders/list.html', orders=orders, status=status)
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\templates\orders\list.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\templates\base.html", line 631, in top-level template code
+    {% block content %}{% endblock %}
+    ^
+  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\templates\orders\list.html", line 8, in block 'content'
+    <a href="{{ url_for('coffee.index') }}" class="btn btn-secondary">
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\flask\app.py", line 1697, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\flask\app.py", line 1686, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+        endpoint,
+    ...<3 lines>...
+        force_external=_external,
+    )
+  File "C:\Users\user\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\werkzeug\routing\map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'coffee.index'. Did you mean 'coffee.new_sale' instead?

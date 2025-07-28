@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    {% include 'inventory/_product_table.html' %}
+    
+    <!-- Low Stock Notification -->
+    {% if low_stock_products %}
+    <div class="alert alert-warning mt-4">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Low Stock Alert:</strong>
+        {% for product in low_stock_products %}
+        {{ product.name }} ({{ product.current_stock }} {{ product.unit }}),
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

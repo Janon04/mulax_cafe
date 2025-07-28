@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create New Order</h2>
+    
+    <form method="post">
+        {{ form.hidden_tag() }}
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="table_id">Table</label>
+                    <select class="form-control" id="table_id" name="table_id" required>
+                        <option value="">Select a table</option>
+                        {% for table in tables %}
+                            <option value="{{ table.id }}"
+                                {% if form.table_id.data == table.id %}selected{% endif %}
+                                {% if table.is_occupied %}disabled{% endif %}>
+                                {{ table.number }} ({{ table.location or 'No location' }}) - 
+                                {{ 'Occupied' if table.is_occupied else 'Available' }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.table_id.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.table_id.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="notes">Order Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="1">{{ form.notes.data or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <h4 class="mb-3">Order Items</h4>
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>${{ "%.2f"|format(product.unit_price) }}</td>
+                        <td>
+                            <input type="number" name="product_{{ product.id }}" 
+                                   class="form-control quantity-input" min="0" value="0"
+                                   data-price="{{ product.unit_price }}">
+                        </td>
+                        <td class="subtotal">$0.00</td>
+                        <td>
+                            <input type="text" name="notes_{{ product.id }}" 
+                                   class="form-control" placeholder="Special instructions">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-active">
+                        <th colspan="3">Total</th>
+                        <th id="order-total">$0.00</th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Create Order
+            </button>
+            <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    
+    function calculateTotal() {
+        let total = 0;
+        
+        quantityInputs.forEach(input => {
+            const row = input.closest('tr');
+            const quantity = parseInt(input.value) || 0;
+            const price = parseFloat(input.dataset.price);
+            const subtotal = quantity * price;
+            
+            row.querySelector('.subtotal').textContent = '$' + subtotal.toFixed(2);
+            total += subtotal;
+        });
+        
+        document.getElementById('order-total').textContent = '$' + total.toFixed(2);
+    }
+    
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', calculateTotal);
+        input.addEventListener('input', calculateTotal);
+    });
+    
+    // Initial calculation
+    calculateTotal();
+});
+</script>
+{% endblock %}
