@@ -462,7 +462,20 @@
                                             </div>
                                         </td>
                                         <td class="fw-bold text-center" style="font-size: 0.9375rem;">{{ req.requested_qty if req.requested_qty else 0 }} {{ req.unit if req.unit else '' }}</td>
-                                        <td style="font-size: 0.9375rem;">{{ req.requester.name if req.requester else 'System' }}</td>
+                                        <td style="font-size: 0.9375rem;">
+                                            {% if req.requester %}
+                                                <span class="fw-bold">
+                                                    {{ req.requester.username if req.requester.username else req.requester.name if req.requester.name else req.requester.email if req.requester.email else 'User' }}
+                                                </span>
+                                                {% if req.requester.email %}
+                                                    <div class="text-muted" style="font-size: 0.8em;">
+                                                        {{ req.requester.email }}
+                                                    </div>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">System</span>
+                                            {% endif %}
+                                        </td>
                                         <td class="text-center">
                                             <span class="badge bg-{{ 'success' if req.status == 'approved' else 'warning' if req.status == 'pending' else 'danger' }}" style="font-size: 0.75rem;">
                                                 {{ req.status|title if req.status else 'Unknown' }}

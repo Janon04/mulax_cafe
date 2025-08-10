@@ -50,6 +50,11 @@ def login():
             flash('Your account is disabled', 'warning')
             return redirect(url_for('auth.login'))
 
+        # Update last_login timestamp
+        from datetime import datetime
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+
         login_user(user, remember=form.remember_me.data)
 
         # Save key session info
@@ -79,6 +84,12 @@ def logout():
 @login_required
 def manage_users():
     users = User.query.order_by(User.username).all()
+    # Format last_login for display
+    for user in users:
+        if user.last_login:
+            user.formatted_last_login = user.last_login.strftime('%Y-%m-%d %H:%M')
+        else:
+            user.formatted_last_login = None
     return render_template('auth/manage_users.html', users=users)
 
 

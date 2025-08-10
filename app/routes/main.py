@@ -74,8 +74,11 @@ def dashboard():
         Product.current_stock < func.coalesce(Product.min_stock, 5.0)
     ).all()
     
-    # Get recent requisitions (last 5)
-    recent_requisitions = Requisition.query.order_by(
+    # Get recent requisitions (last 5), eager-load requester for display
+    from sqlalchemy.orm import joinedload
+    recent_requisitions = Requisition.query.options(
+        joinedload(Requisition.requester)
+    ).order_by(
         Requisition.date.desc()
     ).limit(5).all()
     
