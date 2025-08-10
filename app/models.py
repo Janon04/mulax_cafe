@@ -1,4 +1,5 @@
 from datetime import datetime, time
+import pytz
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import session, redirect, url_for
 from flask_login import UserMixin, current_user
@@ -24,7 +25,8 @@ class Shift(db.Model):
     orders = db.relationship('Order', back_populates='shift')
 
     def is_currently_active(self):
-        now = datetime.now().time()
+        import pytz
+        now = datetime.now(pytz.timezone('Africa/Kigali')).time()
 
 class Attendance(db.Model):
     __tablename__ = 'attendances'
@@ -32,8 +34,8 @@ class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
-    login_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    date = db.Column(db.Date, nullable=False, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')).date())
+    login_time = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
     logout_time = db.Column(db.DateTime)
     status = db.Column(db.String(20), default='present')  # present, late, absent, etc.
     
@@ -50,7 +52,7 @@ class User(db.Model, UserMixin):
     role = db.Column(db.String(20), default='employee')  # Possible values: 'system_control', 'manager', 'employee'
     is_admin = db.Column(db.Boolean, default=False)
     active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
     last_login = db.Column(db.DateTime)
     must_change_password = db.Column(db.Boolean, default=True)
     current_shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'))
@@ -126,7 +128,7 @@ class Product(db.Model):
     remarks = db.Column(db.String(200))
     tax_rate = db.Column(db.Float, nullable=True)
     reorder_qty = db.Column(db.Float, default=0)
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_updated = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')), onupdate=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
     min_stock = db.Column(db.Float, default=5.0)
     
     # Relationships
@@ -167,7 +169,7 @@ class StockMovement(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    date = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')), nullable=False)
     opening_stock = db.Column(db.Float, nullable=False)
     stock_in = db.Column(db.Float, default=0)
     stock_out = db.Column(db.Float, default=0)
@@ -195,7 +197,7 @@ class Requisition(db.Model):
     __tablename__ = 'requisitions'
     
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     current_stock = db.Column(db.Float)
@@ -216,7 +218,7 @@ class CoffeeSale(db.Model):
     __tablename__ = 'coffee_sales'
     
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     quantity_sold = db.Column(db.Float, nullable=False)
     unit_price = db.Column(db.Float, nullable=False)
@@ -241,7 +243,7 @@ class Client(db.Model):
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     address = db.Column(db.String(200))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
     notes = db.Column(db.Text)
     
     # Relationships
@@ -259,7 +261,7 @@ class Order(db.Model):
     total_amount = db.Column(db.Float, default=0.0)
     recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # For legacy compatibility
     waiter_id = db.Column(db.Integer, db.ForeignKey('waiters.id'), nullable=True)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
     served_at = db.Column(db.DateTime)
     served_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'), nullable=True)
@@ -353,7 +355,7 @@ class NotificationLog(db.Model):
     __tablename__ = 'notification_logs'
     
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')), index=True)
     notification_type = db.Column(db.String(20), nullable=False)  # EMAIL, SMS, etc.
     recipient = db.Column(db.String(255), nullable=False)  # Email address or phone number
     subject = db.Column(db.String(255))  # Added for email subject lines
@@ -397,14 +399,14 @@ class NotificationLog(db.Model):
         self.status = 'FAILED'
         self.error_message = error_message
         self.retry_count += 1
-        self.last_retry_at = datetime.utcnow()
+        self.last_retry_at = datetime.now(pytz.timezone('Africa/Kigali'))
         db.session.add(self)
         db.session.commit()
     
     def mark_as_sent(self):
         """Mark notification as successfully sent"""
         self.status = 'SENT'
-        self.last_retry_at = datetime.utcnow()
+        self.last_retry_at = datetime.now(pytz.timezone('Africa/Kigali'))
         db.session.add(self)
         db.session.commit()
 class Waiter(db.Model):

@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from datetime import time, datetime
+import pytz
 from app.models import Shift, User, Attendance
 from app.extensions import db
 from app.auth.forms import ShiftForm
@@ -30,7 +31,7 @@ def current_shift():
             'start_time': current_shift.start_time.strftime('%H:%M'),
             'end_time': current_shift.end_time.strftime('%H:%M'),
             'is_active': current_shift.is_active,
-            'current_time': datetime.now().strftime('%H:%M'),
+            'current_time': datetime.now(pytz.timezone('Africa/Kigali')).strftime('%H:%M'),
             'is_currently_active': current_shift.is_currently_active()
         })
     return jsonify({'message': 'No active shift found'}), 404
@@ -90,7 +91,7 @@ def create_shift():
                     grace_period=form.grace_period.data,
                     is_active=form.is_active.data,
                     created_by=current_user.id,
-                    created_at=datetime.utcnow()
+                    created_at=datetime.now(pytz.timezone('Africa/Kigali'))
                 )
 
                 db.session.add(shift)
@@ -208,7 +209,7 @@ def current_shift():
             'start_time': current_shift.start_time.strftime('%H:%M'),
             'end_time': current_shift.end_time.strftime('%H:%M'),
             'is_active': current_shift.is_active,
-            'current_time': datetime.now().strftime('%H:%M'),
+            'current_time': datetime.now(pytz.timezone('Africa/Kigali')).strftime('%H:%M'),
             'is_currently_active': current_shift.is_currently_active()
         })
     return jsonify({'message': 'No active shift found'}), 404
@@ -229,12 +230,12 @@ def shift_users(shift_id):
 @requires_shift_management
 def shift_attendance(shift_id):
     shift = Shift.query.get_or_404(shift_id)
-    date_filter = request.args.get('date', datetime.now().date().isoformat())
+    date_filter = request.args.get('date', datetime.now(pytz.timezone('Africa/Kigali')).date().isoformat())
 
     try:
         filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
     except ValueError:
-        filter_date = datetime.now().date()
+        filter_date = datetime.now(pytz.timezone('Africa/Kigali')).date()
 
     attendance = Attendance.query.filter(
         Attendance.shift_id == shift_id,

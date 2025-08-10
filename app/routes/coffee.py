@@ -235,7 +235,7 @@ def export_pdf():
         product_data.append([
             product.name,
             f"{product.total_quantity:.2f}",
-            f"${product.total_sales:.2f}"
+            f"Rwf {product.total_sales:.2f}"
         ])
     
     product_table = Table(product_data)
@@ -259,7 +259,7 @@ def export_pdf():
     for payment in sales_by_payment:
         payment_data.append([
             payment.payment_mode,
-            f"${payment.total_sales:.2f}"
+            f"Rwf {payment.total_sales:.2f}"
         ])
     
     payment_table = Table(payment_data)

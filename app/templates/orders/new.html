@@ -81,13 +81,13 @@
                     {% for product in products %}
                     <tr>
                         <td>{{ product.name }}</td>
-                        <td>${{ "%.2f"|format(product.unit_price) }}</td>
+                        <td>Rwf {{ "%.2f"|format(product.unit_price) }}</td>
                         <td>
                             <input type="number" name="product_{{ product.id }}" 
                                    class="form-control quantity-input" min="0" value="0"
                                    data-price="{{ product.unit_price }}">
                         </td>
-                        <td class="subtotal">$0.00</td>
+                        <td class="subtotal">Rwf 0.00</td>
                         <td>
                             <input type="text" name="notes_{{ product.id }}" 
                                    class="form-control" placeholder="Special instructions">
@@ -98,7 +98,7 @@
                 <tfoot>
                     <tr class="table-active">
                         <th colspan="3">Total</th>
-                        <th id="order-total">$0.00</th>
+                        <th id="order-total">Rwf 0.00</th>
                         <th></th>
                     </tr>
                 </tfoot>
@@ -129,11 +129,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const price = parseFloat(input.dataset.price);
             const subtotal = quantity * price;
             
-            row.querySelector('.subtotal').textContent = '$' + subtotal.toFixed(2);
+            row.querySelector('.subtotal').textContent = 'Rwf ' + subtotal.toFixed(2);
             total += subtotal;
         });
         
-        document.getElementById('order-total').textContent = '$' + total.toFixed(2);
+        document.getElementById('order-total').textContent = 'Rwf ' + total.toFixed(2);
     }
     
     quantityInputs.forEach(input => {

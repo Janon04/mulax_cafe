@@ -50,9 +50,11 @@ def login():
             flash('Your account is disabled', 'warning')
             return redirect(url_for('auth.login'))
 
+
         # Update last_login timestamp
         from datetime import datetime
-        user.last_login = datetime.utcnow()
+        import pytz
+        user.last_login = datetime.now(pytz.timezone('Africa/Kigali'))
         db.session.commit()
 
         login_user(user, remember=form.remember_me.data)

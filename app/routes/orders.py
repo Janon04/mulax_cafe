@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from datetime import datetime
+import pytz
 from app.models import Order, OrderItem, Product, User, Table
 from app.auth.forms import OrderForm
 from app import db
@@ -91,7 +92,7 @@ def new_order():
     waiters = Waiter.query.filter_by(is_active=True).order_by(Waiter.name).all()
 
     # Automatically determine current shift based on time
-    now = datetime.now().time()
+    now = datetime.now(pytz.timezone('Africa/Kigali')).time()
     morning_start = datetime.strptime('07:00', '%H:%M').time()
     evening_start = datetime.strptime('17:00', '%H:%M').time()
     midnight = datetime.strptime('00:00', '%H:%M').time()
@@ -352,7 +353,7 @@ def update_status(order_id):
         order.status = new_status
         if new_status == 'served':
             order.served_by = current_user.id
-            order.served_at = datetime.utcnow()
+            order.served_at = datetime.now(pytz.timezone('Africa/Kigali'))
         db.session.commit()
         flash(f'Order status updated to {new_status}', 'success')
     
@@ -372,7 +373,7 @@ def get_pending_count():
 @bp.route('/today-stats')
 @login_required
 def get_today_stats():
-    today = datetime.utcnow().date()
+    today = datetime.now(pytz.timezone('Africa/Kigali')).date()
     
     # Base query for today's orders
     query = Order.query.filter(
@@ -409,7 +410,7 @@ def get_today_stats():
 @login_required
 def get_recent_orders_data():
     # Define "recent" as orders from the last 2 hours
-    two_hours_ago = datetime.utcnow() - timedelta(hours=2)
+    two_hours_ago = datetime.now(pytz.timezone('Africa/Kigali')) - timedelta(hours=2)
     
     query = Order.query.filter(Order.date >= two_hours_ago).order_by(Order.date.desc())
     
