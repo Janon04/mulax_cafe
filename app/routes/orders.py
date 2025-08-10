@@ -180,6 +180,16 @@ def new_order():
                 except (TypeError, ValueError):
                     quantity = 0
                 if quantity > 0:
+                    # Check stock before adding item
+                    if product.current_stock < quantity:
+                        db.session.rollback()
+                        flash(f'Not enough stock for {product.name}. Only {product.current_stock} {product.unit} left.', 'danger')
+                        return render_template('orders/new.html',
+                                               form=form,
+                                               products=products,
+                                               tables=tables,
+                                               waiters=waiters,
+                                               current_shift=current_shift)
                     items_added = True
                     item = OrderItem(
                         order_id=order.id,
@@ -190,6 +200,8 @@ def new_order():
                     )
                     db.session.add(item)
                     total_amount += quantity * product.unit_price
+                    # Deduct from inventory
+                    product.current_stock -= quantity
 
             if not items_added:
                 db.session.rollback()

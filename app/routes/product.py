@@ -217,7 +217,7 @@ def delete_product(product_id):
     return redirect(url_for('product.list_products'))
     
 
-@bp.route('/<int:product_id>/add_stock', methods=['POST'])
+@bp.route('/<int:product_id>/add_stock', methods=['GET', 'POST'])
 @login_required
 def add_stock(product_id):
     """Record a stock addition for a product"""

@@ -26,3 +26,34 @@ def register_waiter():
 def list_waiters():
     waiters = Waiter.query.all()
     return render_template('waiters/list_waiters.html', waiters=waiters)
+
+
+# View waiter details
+@bp.route('/<int:waiter_id>', methods=['GET'])
+def view_waiter(waiter_id):
+    waiter = Waiter.query.get_or_404(waiter_id)
+    return render_template('waiters/view_waiter.html', waiter=waiter)
+
+# Edit waiter
+@bp.route('/<int:waiter_id>/edit', methods=['GET', 'POST'])
+def edit_waiter(waiter_id):
+    waiter = Waiter.query.get_or_404(waiter_id)
+    form = WaiterForm(obj=waiter)
+    if form.validate_on_submit():
+        waiter.name = form.name.data
+        waiter.phone_number = form.phone_number.data
+        waiter.email = form.email.data
+        waiter.is_active = form.is_active.data
+        db.session.commit()
+        flash('Waiter updated successfully!', 'success')
+        return redirect(url_for('waiters.list_waiters'))
+    return render_template('waiters/edit_waiter.html', form=form, waiter=waiter)
+
+# Delete waiter
+@bp.route('/<int:waiter_id>/delete', methods=['POST'])
+def delete_waiter(waiter_id):
+    waiter = Waiter.query.get_or_404(waiter_id)
+    db.session.delete(waiter)
+    db.session.commit()
+    flash('Waiter deleted successfully!', 'success')
+    return redirect(url_for('waiters.list_waiters'))

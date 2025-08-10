@@ -616,16 +616,16 @@
                         </li>
                         
                         <!-- Shift Management Section -->
-                        {% if current_user.role in ['admin', 'manager'] %}
+                        <!-- {% if current_user.role in ['admin', 'manager'] %}
                         <li class="nav-item">
                             <a class="sidebar-nav-link d-flex align-items-center" href="#shiftSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="shiftSubmenu">
                                 <i class="fas fa-calendar-alt"></i>
                                 <span>Shifts</span>
                                 <i class="fas fa-chevron-down ms-auto menu-toggle"></i>
-                            </a>
-                            <div class="collapse sidebar-submenu" id="shiftSubmenu">
-                                <ul class="sidebar-nav">
-                                    <li class="nav-item">
+                            </a> -->
+                            <!-- <div class="collapse sidebar-submenu" id="shiftSubmenu"> -->
+                                <!-- <ul class="sidebar-nav"> -->
+                                    <!-- <li class="nav-item">
                                         <a class="sidebar-nav-link" href="{{ url_for('shifts.shift_list') }}">
                                             <i class="fas fa-list"></i><span>All Shifts</span>
                                         </a>
@@ -634,9 +634,9 @@
                                         <a class="sidebar-nav-link" href="{{ url_for('shifts.create_shift') }}">
                                             <i class="fas fa-plus-circle"></i><span>Create Shift</span>
                                         </a>
-                                    </li>
-                                </ul>
-                            </div>
+                                    </li> -->
+                                <!-- </ul> -->
+                            <!-- </div> -->
                         </li>
                         {% endif %}
 

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Waiter Details</h2>
+    <table class="table table-bordered">
+        <tr>
+            <th>Name</th>
+            <td>{{ waiter.name }}</td>
+        </tr>
+        <tr>
+            <th>Phone</th>
+            <td>{{ waiter.phone_number or '-' }}</td>
+        </tr>
+        <tr>
+            <th>Email</th>
+            <td>{{ waiter.email or '-' }}</td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>{{ 'Active' if waiter.is_active else 'Inactive' }}</td>
+        </tr>
+    </table>
+    <a href="{{ url_for('waiters.edit_waiter', waiter_id=waiter.id) }}" class="btn btn-warning">Edit</a>
+    <form action="{{ url_for('waiters.delete_waiter', waiter_id=waiter.id) }}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this waiter?');">Delete</button>
+    </form>
+    <a href="{{ url_for('waiters.list_waiters') }}" class="btn btn-secondary">Back to List</a>
+</div>
+{% endblock %}

@@ -1,64 +1,56 @@
-2025-08-10 11:26:06,820 ERROR: Failed to register blueprint shifts: View function mapping is overwriting an existing endpoint function: shifts.current_shift [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:313]
-2025-08-10 11:26:06,829 INFO: Registered blueprint: waiters [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:06,835 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:122]
-2025-08-10 11:26:06,903 INFO: Added API namespace: users [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,903 INFO: Added API namespace: products [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,903 INFO: Added API namespace: stock_movements [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,917 INFO: Added API namespace: requisitions [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,920 INFO: Added API namespace: coffee_sales [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,922 INFO: Added API namespace: clients [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,924 INFO: Added API namespace: orders [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,925 INFO: Added API namespace: reports [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,927 INFO: Added API namespace: shifts [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:06,929 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:248]
-2025-08-10 11:26:08,058 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:278]
-2025-08-10 11:26:08,079 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:58]
-2025-08-10 11:26:09,497 INFO: Registered blueprint: main [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,497 INFO: Registered blueprint: auth [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,497 INFO: Registered blueprint: requisitions [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,510 INFO: Registered blueprint: product [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,513 INFO: Registered blueprint: coffee [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,516 INFO: Registered blueprint: kitchen [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,521 INFO: Registered blueprint: orders [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,524 INFO: Registered blueprint: tables [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,525 INFO: Registered blueprint: notifications [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,529 ERROR: Failed to register blueprint shifts: View function mapping is overwriting an existing endpoint function: shifts.current_shift [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:313]
-2025-08-10 11:26:09,530 INFO: Registered blueprint: waiters [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:26:09,537 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:122]
-2025-08-10 11:26:09,601 INFO: Added API namespace: users [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,601 INFO: Added API namespace: products [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,601 INFO: Added API namespace: stock_movements [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,601 INFO: Added API namespace: requisitions [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,601 INFO: Added API namespace: coffee_sales [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,613 INFO: Added API namespace: clients [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,615 INFO: Added API namespace: orders [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,615 INFO: Added API namespace: reports [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,619 INFO: Added API namespace: shifts [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
-2025-08-10 11:26:09,622 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:248]
-2025-08-10 11:26:40,734 INFO: Scheduler shutdown complete [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:256]
-2025-08-10 11:27:26,660 ERROR: NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-Path: /static/images/favicon.ico
+2025-08-10 13:49:25,848 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:278]
+2025-08-10 13:49:25,893 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:58]
+2025-08-10 13:49:27,757 INFO: Registered blueprint: main [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,760 INFO: Registered blueprint: auth [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,762 INFO: Registered blueprint: requisitions [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,766 INFO: Registered blueprint: product [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,771 INFO: Registered blueprint: coffee [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,776 INFO: Registered blueprint: kitchen [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,786 INFO: Registered blueprint: orders [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,788 INFO: Registered blueprint: tables [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,790 INFO: Registered blueprint: notifications [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,794 ERROR: Failed to register blueprint shifts: View function mapping is overwriting an existing endpoint function: shifts.current_shift [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:313]
+2025-08-10 13:49:27,796 INFO: Registered blueprint: waiters [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:27,802 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:122]
+2025-08-10 13:49:27,897 INFO: Added API namespace: users [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,899 INFO: Added API namespace: products [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,900 INFO: Added API namespace: stock_movements [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,901 INFO: Added API namespace: requisitions [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,903 INFO: Added API namespace: coffee_sales [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,904 INFO: Added API namespace: clients [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,905 INFO: Added API namespace: orders [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,908 INFO: Added API namespace: reports [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,914 INFO: Added API namespace: shifts [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:27,918 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:248]
+2025-08-10 13:49:29,119 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:278]
+2025-08-10 13:49:29,143 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:58]
+2025-08-10 13:49:30,566 INFO: Registered blueprint: main [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,566 INFO: Registered blueprint: auth [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,566 INFO: Registered blueprint: requisitions [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,580 INFO: Registered blueprint: product [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,584 INFO: Registered blueprint: coffee [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,586 INFO: Registered blueprint: kitchen [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,589 INFO: Registered blueprint: orders [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,593 INFO: Registered blueprint: tables [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,595 INFO: Registered blueprint: notifications [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,598 ERROR: Failed to register blueprint shifts: View function mapping is overwriting an existing endpoint function: shifts.current_shift [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:313]
+2025-08-10 13:49:30,599 INFO: Registered blueprint: waiters [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+2025-08-10 13:49:30,604 INFO: Database tables created successfully. [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:122]
+2025-08-10 13:49:30,675 INFO: Added API namespace: users [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,677 INFO: Added API namespace: products [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,678 INFO: Added API namespace: stock_movements [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,679 INFO: Added API namespace: requisitions [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,680 INFO: Added API namespace: coffee_sales [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,682 INFO: Added API namespace: clients [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,683 INFO: Added API namespace: orders [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,684 INFO: Added API namespace: reports [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,685 INFO: Added API namespace: shifts [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:341]
+2025-08-10 13:49:30,688 INFO: Scheduled tasks initialized [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:248]
+2025-08-10 13:49:53,292 INFO: Scheduler shutdown complete [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:256]
+2025-08-10 13:50:00,709 CRITICAL: BuildError: Could not build url for endpoint 'kitchen.list_inventory'. Did you mean 'kitchen.inventory' instead?
+Path: /kitchen/movements
 Method: GET
-User: Anonymous
-IP: 127.0.0.1 [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\utils\error_handlers.py:46]
-Traceback (most recent call last):
-  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 902, in dispatch_request
-    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
-  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 278, in <lambda>
-    view_func=lambda **kw: self_ref().send_static_file(**kw),  # type: ignore # noqa: B950
-  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 326, in send_static_file
-    return send_from_directory(
-  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\helpers.py", line 565, in send_from_directory
-    return werkzeug.utils.send_from_directory(  # type: ignore[return-value]
-  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\utils.py", line 575, in send_from_directory
-    raise NotFound()
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
-2025-08-10 11:27:32,115 CRITICAL: UndefinedError: 'app.models.CoffeeSale object' has no attribute 'shift'
-Path: /coffee/
-Method: GET
-User: 2
+User: 3
 IP: 127.0.0.1 [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\utils\error_handlers.py:44]
 Traceback (most recent call last):
   File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
@@ -67,8 +59,10 @@ Traceback (most recent call last):
     return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
   File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
     return current_app.ensure_sync(func)(*args, **kwargs)
-  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\routes\coffee.py", line 27, in list_sales
-    return render_template('coffee/list.html', sales=sales)
+  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\auth\decorators.py", line 38, in decorated_function
+    return f(*args, **kwargs)
+  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\routes\kitchen.py", line 67, in stock_movements
+    return render_template('kitchen/movements.html', movements=movements)
   File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 150, in render_template
     return _render(app, template, context)
   File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 131, in _render
@@ -77,18 +71,19 @@ Traceback (most recent call last):
     self.environment.handle_exception()
   File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 942, in handle_exception
     raise rewrite_traceback_stack(source=source)
-  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\templates\coffee\list.html", line 1, in top-level template code
+  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\templates\kitchen\movements.html", line 1, in top-level template code
     {% extends "base.html" %}
   File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\templates\base.html", line 692, in top-level template code
     {% block content %}{% endblock %}
-  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\templates\coffee\list.html", line 52, in block 'content'
-    <td>{{ sale.shift.name }}</td>
-  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 490, in getattr
-    return getattr(obj, attribute)
-jinja2.exceptions.UndefinedError: 'app.models.CoffeeSale object' has no attribute 'shift'
-2025-08-10 11:32:29,706 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:278]
-2025-08-10 11:32:29,753 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:58]
-2025-08-10 11:32:32,151 INFO: Registered blueprint: main [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:32:32,151 INFO: Registered blueprint: auth [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:32:32,151 INFO: Registered blueprint: requisitions [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
-2025-08-10 11:32:32,164 INFO: Registered blueprint: product [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
+  File "C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\templates\kitchen\movements.html", line 9, in block 'content'
+    <a href="{{ url_for('kitchen.list_inventory') }}" class="btn btn-secondary">
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+  File "C:\Users\user\AppData\Local\Programs\Python\Python310\lib\site-packages\werkzeug\routing\map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'kitchen.list_inventory'. Did you mean 'kitchen.inventory' instead?
+2025-08-10 13:54:28,580 INFO: Mulax Cafe startup [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:278]
+2025-08-10 13:54:28,613 INFO: Database connection established [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:58]
+2025-08-10 13:54:30,156 INFO: Registered blueprint: main [in C:\Users\user\Desktop\Mulaxx_coffee\mulax_cafe\app\__init__.py:311]
