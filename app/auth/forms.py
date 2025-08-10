@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from datetime import datetime
 from wtforms import (
     StringField, 
     PasswordField, 
@@ -7,7 +8,8 @@ from wtforms import (
     SelectField,
     TextAreaField,
     DecimalField,
-    IntegerField
+    IntegerField,
+    TimeField
 )
 from wtforms.validators import (
     DataRequired, 
@@ -16,9 +18,11 @@ from wtforms.validators import (
     Email, 
     EqualTo, 
     ValidationError,
-    NumberRange
+    NumberRange,
+    Optional
 )
 from app.models import User, Table
+from datetime import time
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -35,18 +39,8 @@ class UserEditForm(FlaskForm):
     ])
     is_admin = BooleanField('Admin')
     active = BooleanField('Active')
-    password = PasswordField('New Password')  # Optional
+    password = PasswordField('New Password (admin can set directly)')
     submit = SubmitField('Update')
-
-    def __init__(self, original_username, *args, **kwargs):
-        super(UserEditForm, self).__init__(*args, **kwargs)
-        self.original_username = original_username
-
-    def validate_username(self, field):
-        if field.data != self.original_username:
-            user = User.query.filter_by(username=field.data).first()
-            if user:
-                raise ValidationError('This username is already taken.')
 
 class UserForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -63,8 +57,9 @@ class UserForm(FlaskForm):
         user = User.query.filter_by(username=field.data).first()
         if user:
             raise ValidationError('This username is already taken.')
+
 class OrderForm(FlaskForm):
-    table_id = SelectField('Table', coerce=int, validators=[DataRequired()])  # Changed from table_number
+    table_id = SelectField('Table', coerce=int, validators=[DataRequired()])
     client_id = SelectField('Client (optional)', coerce=int, choices=[])
     notes = TextAreaField('Special Instructions')
     submit = SubmitField('Create Order')
@@ -114,3 +109,122 @@ class TableForm(FlaskForm):
     def validate_number(self, field):
         if Table.query.filter_by(number=field.data).first():
             raise ValidationError('This table number already exists.')
+
+
+class ShiftForm(FlaskForm):
+    shift_type = SelectField(
+        'Shift Type',
+        choices=[
+            ('custom', 'Custom Shift'),
+            ('morning', 'Morning Shift (7:00 AM - 5:00 PM)'),
+            ('evening', 'Evening Shift (5:00 PM - 12:00 AM)')
+        ],
+        default='custom',
+        validators=[DataRequired()]
+    )
+    
+    name = StringField(
+        'Shift Name', 
+        validators=[DataRequired()],
+        render_kw={"placeholder": "e.g. Morning Shift"}
+    )
+    
+    start_hour = SelectField(
+        'Start Hour', 
+        choices=[(str(i).zfill(2), str(i).zfill(2)) for i in range(1, 13)], 
+        validators=[DataRequired()]
+    )
+    start_minute = SelectField(
+        'Start Minute', 
+        choices=[(str(i).zfill(2), str(i).zfill(2)) for i in range(0, 60, 15)], 
+        validators=[DataRequired()],
+        default='00'
+    )
+    start_ampm = SelectField(
+        'AM/PM', 
+        choices=[('AM', 'AM'), ('PM', 'PM')], 
+        validators=[DataRequired()]
+    )
+    
+    end_hour = SelectField(
+        'End Hour', 
+        choices=[(str(i).zfill(2), str(i).zfill(2)) for i in range(1, 13)], 
+        validators=[DataRequired()]
+    )
+    end_minute = SelectField(
+        'End Minute', 
+        choices=[(str(i).zfill(2), str(i).zfill(2)) for i in range(0, 60, 15)], 
+        validators=[DataRequired()],
+        default='00'
+    )
+    end_ampm = SelectField(
+        'AM/PM', 
+        choices=[('AM', 'AM'), ('PM', 'PM')], 
+        validators=[DataRequired()]
+    )
+    
+    description = TextAreaField('Description', validators=[Optional()])
+    grace_period = IntegerField(
+        'Grace Period (minutes)', 
+        validators=[Optional(), NumberRange(min=0)],
+        default=15
+    )
+    is_active = BooleanField('Is Active', default=True)
+    submit = SubmitField('Save Shift')
+
+    def validate(self, extra_validators=None):
+        # First call the parent's validate method
+        if not super().validate():
+            return False
+
+        # Skip time validation if using predefined shifts
+        if self.shift_type.data in ['morning', 'evening']:
+            return True
+
+        # Convert times to 24-hour format for comparison (custom shifts only)
+        try:
+            start_time_str = f"{self.start_hour.data}:{self.start_minute.data} {self.start_ampm.data}"
+            end_time_str = f"{self.end_hour.data}:{self.end_minute.data} {self.end_ampm.data}"
+            
+            start_time = datetime.strptime(start_time_str, '%I:%M %p').time()
+            end_time = datetime.strptime(end_time_str, '%I:%M %p').time()
+
+            if end_time <= start_time:
+                self.end_ampm.errors.append('End time must be after start time')
+                return False
+
+        except ValueError:
+            self.start_hour.errors.append('Invalid time combination')
+            return False
+
+        return True
+
+    def __init__(self, *args, **kwargs):
+        super(ShiftForm, self).__init__(*args, **kwargs)
+        
+        # Set default values for predefined shifts if selected
+        if self.shift_type.data == 'morning':
+            self.start_hour.data = '07'
+            self.start_minute.data = '00'
+            self.start_ampm.data = 'AM'
+            self.end_hour.data = '05'
+            self.end_minute.data = '00'
+            self.end_ampm.data = 'PM'
+            if not self.name.data or self.name.data == 'Custom Shift':
+                self.name.data = 'Morning Shift'
+                
+        elif self.shift_type.data == 'evening':
+            self.start_hour.data = '05'
+            self.start_minute.data = '00'
+            self.start_ampm.data = 'PM'
+            self.end_hour.data = '12'
+            self.end_minute.data = '00'
+            self.end_ampm.data = 'AM'
+            if not self.name.data or self.name.data == 'Custom Shift':
+                self.name.data = 'Evening Shift'
+class WaiterForm(FlaskForm):
+    name = StringField('Full Name', validators=[DataRequired(), Length(min=2, max=100)])
+    phone_number = StringField('Phone Number', validators=[Optional(), Length(max=20)])
+    email = StringField('Email', validators=[Optional(), Email()])
+    is_active = BooleanField('Active', default=True)
+    submit = SubmitField('Register Waiter')

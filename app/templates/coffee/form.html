@@ -20,6 +20,15 @@
                             {% endfor %}
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label for="waiter_id" class="form-label">Waiter</label>
+                        <select class="form-select" id="waiter_id" name="waiter_id">
+                            <option value="">Select Waiter</option>
+                            {% for waiter in waiters %}
+                                <option value="{{ waiter.id }}" {% if request.form.waiter_id|default('')|string == waiter.id|string %}selected{% endif %}>{{ waiter.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">

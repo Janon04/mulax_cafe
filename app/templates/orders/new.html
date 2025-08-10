@@ -38,6 +38,32 @@
                 </div>
             </div>
         </div>
+
+
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="waiter_id">Assign to Waiter</label>
+                    <select class="form-control" id="waiter_id" name="waiter_id">
+                        <option value="">Select a Waiter</option>
+                        {% for waiter in waiters %}
+                            <option value="{{ waiter.id }}" {% if request.form.waiter_id|default('')|string == waiter.id|string %}selected{% endif %}>
+                                {% if waiter.username is defined %}{{ waiter.username }}{% elif waiter.name is defined %}{{ waiter.name }}{% else %}Waiter #{{ waiter.id }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Shift</label>
+                    <input type="text" class="form-control" readonly 
+                           value="{{ current_shift.name if current_shift else 'No active shift' }}">
+                </div>
+            </div>
+        </div>
+    
         
         <h4 class="mb-3">Order Items</h4>
         <div class="table-responsive mb-4">

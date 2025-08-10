@@ -35,6 +35,8 @@
                     <tr>
                         <th>Date</th>
                         <th>Product</th>
+                        <th>Waiter</th>
+                        <th>Shift</th>
                         <th>Qty</th>
                         <th>Unit Price (Rwf)</th>
                         <th>Total (Rwf)</th>
@@ -46,6 +48,8 @@
                     <tr>
                         <td>{{ sale.date.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ sale.product.name }}</td>
+                        <td>{% if sale.waiter %}{{ sale.waiter.name }}{% else %}N/A{% endif %}</td>
+                        <td>{{ sale.shift.name }}</td>
                         <td>{{ sale.quantity_sold }}</td>
                         <td>{{ "{:,.0f}".format(sale.unit_price) }} Rwf</td>
                         <td>{{ "{:,.0f}".format(sale.total_sales) }} Rwf</td>

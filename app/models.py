@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import session, redirect, url_for
 from flask_login import UserMixin, current_user
@@ -8,6 +8,38 @@ from app.extensions import db
 from sqlalchemy.exc import SQLAlchemyError
 from flask_restx import Api, Namespace, fields
 from flask import Flask
+
+class Shift(db.Model):
+    __tablename__ = 'shifts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    start_time = db.Column(db.Time, nullable=False)  # e.g., 07:00:00
+    end_time = db.Column(db.Time, nullable=False)   # e.g., 17:00:00
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    users = db.relationship('User', back_populates='current_shift')
+    attendances = db.relationship('Attendance', back_populates='shift')
+    orders = db.relationship('Order', back_populates='shift')
+
+    def is_currently_active(self):
+        now = datetime.now().time()
+
+class Attendance(db.Model):
+    __tablename__ = 'attendances'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
+    login_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    logout_time = db.Column(db.DateTime)
+    status = db.Column(db.String(20), default='present')  # present, late, absent, etc.
+    
+    # Relationships
+    user = db.relationship('User', back_populates='attendances')
+    shift = db.relationship('Shift', back_populates='attendances')
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -21,8 +53,11 @@ class User(db.Model, UserMixin):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     must_change_password = db.Column(db.Boolean, default=True)
-
+    current_shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'))
+    
     # Relationships
+    current_shift = db.relationship('Shift', back_populates='users')
+    attendances = db.relationship('Attendance', back_populates='user')
     stock_movements = db.relationship('StockMovement', back_populates='user')
     requisitions = db.relationship(
         'Requisition', 
@@ -37,6 +72,7 @@ class User(db.Model, UserMixin):
     coffee_sales = db.relationship('CoffeeSale', back_populates='recorder')
     orders_recorded = db.relationship('Order', back_populates='recorder', foreign_keys='[Order.recorded_by]')
     orders_served = db.relationship('Order', back_populates='server', foreign_keys='[Order.served_by]')
+    orders_created = db.relationship('Order', back_populates='user', foreign_keys='Order.user_id')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -60,6 +96,17 @@ class User(db.Model, UserMixin):
     def can_view_user_management(self):
         """Check if user can view user management"""
         return self.is_admin or self.is_manager() or self.is_system_control()
+    
+    def get_current_shift(self):
+        """Get the current active shift for this user"""
+        if self.is_admin or self.is_system_control():
+            return None  # Admins can see all shifts
+        return self.current_shift
+
+    def can_manage_shifts(self):
+        """Check if user can manage shifts"""
+        return self.is_admin or self.role == 'manager'
+
 
 
 class Product(db.Model):
@@ -176,10 +223,14 @@ class CoffeeSale(db.Model):
     total_sales = db.Column(db.Float, nullable=False)
     payment_mode = db.Column(db.String(20))
     recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    
+    waiter_id = db.Column(db.Integer, db.ForeignKey('waiters.id'), nullable=True)
+    shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'), nullable=True)
+
     # Relationships
     product = db.relationship('Product', back_populates='coffee_sales')
     recorder = db.relationship('User', back_populates='coffee_sales')
+    waiter = db.relationship('Waiter', foreign_keys=[waiter_id])
+    shift = db.relationship('Shift')
 
 
 class Client(db.Model):
@@ -202,24 +253,34 @@ class Order(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'))
-    table_id = db.Column(db.Integer, db.ForeignKey('tables.id'), nullable=False)  # Changed from table_number
+    table_id = db.Column(db.Integer, db.ForeignKey('tables.id'), nullable=False)
     status = db.Column(db.String(20), default='pending')
     notes = db.Column(db.Text)
     total_amount = db.Column(db.Float, default=0.0)
-    recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # For legacy compatibility
+    waiter_id = db.Column(db.Integer, db.ForeignKey('waiters.id'), nullable=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     served_at = db.Column(db.DateTime)
     served_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Customer who placed the order
     
-    # Relationships
+    # Relationships - all explicitly specifying foreign keys
     client = db.relationship('Client', back_populates='orders')
     items = db.relationship('OrderItem', back_populates='order', cascade='all, delete-orphan')
-    recorder = db.relationship('User', back_populates='orders_recorded', foreign_keys=[recorded_by])
-    server = db.relationship('User', back_populates='orders_served', foreign_keys=[served_by])
-    table = db.relationship('Table', back_populates='orders')  # New relationship
-
-
-    # Add to your models.py
+    recorder = db.relationship('User', 
+                             back_populates='orders_recorded', 
+                             foreign_keys=[recorded_by])
+    server = db.relationship('User', 
+                           back_populates='orders_served', 
+                           foreign_keys=[served_by])
+    table = db.relationship('Table', back_populates='orders')
+    shift = db.relationship('Shift', back_populates='orders')
+    user = db.relationship('User',  # This is the customer relationship
+                         back_populates='orders_created', 
+                         foreign_keys=[user_id])
+    waiter = db.relationship('Waiter', foreign_keys=[waiter_id])
+    
 class Table(db.Model):
     __tablename__ = 'tables'
     
@@ -256,7 +317,6 @@ class MyAdminIndexView(AdminIndexView):
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('login'))
 
-
 class SecureModelView(ModelView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin
@@ -264,13 +324,31 @@ class SecureModelView(ModelView):
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('login'))
     
-from flask_restx import fields
+    def get_query(self):
+        """Override to filter by shift if user is not admin"""
+        query = super().get_query()
+        
+        if not current_user.is_admin and not current_user.is_system_control():
+            if hasattr(self.model, 'user') and hasattr(self.model.user, 'current_shift'):
+                # Filter by current user's shift
+                return query.join(self.model.user).filter(
+                    User.current_shift_id == current_user.current_shift_id
+                )
+            elif hasattr(self.model, 'shift'):
+                # Filter by shift directly
+                return query.filter_by(shift_id=current_user.current_shift_id)
+        
+        return query
 
-# Common fields reused across models
-timestamp_fields = {
-    'created_at': fields.DateTime(dt_format='iso8601', description='Creation timestamp'),
-    'updated_at': fields.DateTime(dt_format='iso8601', description='Last update timestamp')
-}
+    def get_list(self, page, sort_field, sort_desc, search, filters, page_size=None):
+        """Override list view to show shift info"""
+        count, data = super().get_list(page, sort_field, sort_desc, search, filters, page_size)
+        
+        # Add shift info to context if not admin
+        if not current_user.is_admin and not current_user.is_system_control():
+            self._template_args['current_shift'] = current_user.current_shift
+        
+        return count, data
 class NotificationLog(db.Model):
     __tablename__ = 'notification_logs'
     
@@ -329,3 +407,14 @@ class NotificationLog(db.Model):
         self.last_retry_at = datetime.utcnow()
         db.session.add(self)
         db.session.commit()
+class Waiter(db.Model):
+    __tablename__ = 'waiters'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=True)
+    email = db.Column(db.String(120), nullable=True, unique=True)
+    is_active = db.Column(db.Boolean, default=True)
+
+    def __repr__(self):
+        return f"<Waiter {self.name}>"

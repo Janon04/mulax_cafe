@@ -12,7 +12,7 @@ class Config:
     # ============ CORE CONFIGURATION ============
     SECRET_KEY = os.getenv('SECRET_KEY', secrets.token_hex(32))
     APP_NAME = "Mulax Cafe"
-    APP_URL = os.getenv('APP_URL', 'http://localhost:5000')
+    APP_URL = os.getenv('APP_URL', 'http://localhost:5050')
     FLASK_ENV = os.getenv('FLASK_ENV', 'development').lower()
     SERVER_NAME = os.getenv('SERVER_NAME')
     APPLICATION_ROOT = os.getenv('APPLICATION_ROOT', '/')
@@ -75,21 +75,32 @@ class Config:
     DEFAULT_USERS = {
         'admin': {
             'username': os.getenv('DEFAULT_ADMIN_USER', 'admin'),
-            'password': os.getenv('DEFAULT_ADMIN_PASSWORD', secrets.token_urlsafe(16)),
+            'password': os.getenv('DEFAULT_ADMIN_PASSWORD', 'admin1'),  
             'email': os.getenv('DEFAULT_ADMIN_EMAIL', 'admin@mulaxcafe.com'),
-            'role': 'admin',
+            'role': 'system_control', 
             'is_admin': True,
-            'must_change_password': True
+            'must_change_password': True,
+            'active': True
         },
         'manager': {
             'username': os.getenv('DEFAULT_MANAGER_USER', 'manager'),
-            'password': os.getenv('DEFAULT_MANAGER_PASSWORD', secrets.token_urlsafe(16)),
+            'password': os.getenv('DEFAULT_MANAGER_PASSWORD', 'manager2'),  
             'email': os.getenv('DEFAULT_MANAGER_EMAIL', 'manager@mulaxcafe.com'),
             'role': 'manager',
             'is_admin': False,
-            'must_change_password': True
+            'must_change_password': True,
+            'active': True
         }
     }
+
+    # ============ PASSWORD POLICY ============
+    PASSWORD_MIN_LENGTH = 8
+    PASSWORD_MAX_LENGTH = 128
+    PASSWORD_REQUIRE_UPPERCASE = True
+    PASSWORD_REQUIRE_LOWERCASE = True
+    PASSWORD_REQUIRE_NUMBERS = True
+    PASSWORD_REQUIRE_SPECIAL = True
+    PASSWORD_RESET_EXPIRATION = timedelta(hours=24)  # Password reset links expire after 24 hours
 
     # ============ BUSINESS CONFIGURATION ============
     @property
@@ -137,6 +148,27 @@ class ProductionConfig(Config):
     MAIL_SUPPRESS_SEND = False
     DEBUG_TB_ENABLED = False
     ENABLE_REGISTRATION = False
+    # Override default passwords in production for security
+    DEFAULT_USERS = {
+        'admin': {
+            'username': os.getenv('DEFAULT_ADMIN_USER', 'admin'),
+            'password': os.getenv('DEFAULT_ADMIN_PASSWORD'),  # Must be set in production
+            'email': os.getenv('DEFAULT_ADMIN_EMAIL', 'admin@mulaxcafe.com'),
+            'role': 'system_control',
+            'is_admin': True,
+            'must_change_password': True,
+            'active': True
+        },
+        'manager': {
+            'username': os.getenv('DEFAULT_MANAGER_USER', 'manager'),
+            'password': os.getenv('DEFAULT_MANAGER_PASSWORD'),  # Must be set in production
+            'email': os.getenv('DEFAULT_MANAGER_EMAIL', 'manager@mulaxcafe.com'),
+            'role': 'manager',
+            'is_admin': False,
+            'must_change_password': True,
+            'active': True
+        }
+    }
 
 
 class DevelopmentConfig(Config):

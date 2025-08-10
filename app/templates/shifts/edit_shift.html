@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Shift - {{ shift.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-edit me-2"></i>Edit Shift: {{ shift.name }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('shifts.list') }}">Shift Management</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit Shift</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Shift Details</h5>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('shifts.edit', shift_id=shift.id) }}" id="shiftForm">
+                {{ form.hidden_tag() }}
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form.name.label(class="form-label fw-bold") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="e.g. Morning Shift") }}
+                            {% for error in form.name.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <small class="form-text text-muted">A descriptive name for the shift</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form.grace_period.label(class="form-label fw-bold") }}
+                            <div class="input-group">
+                                {{ form.grace_period(class="form-control" + (" is-invalid" if form.grace_period.errors else "")) }}
+                                <span class="input-group-text">minutes</span>
+                                {% for error in form.grace_period.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <small class="form-text text-muted">Allowed late arrival time (0-60 minutes)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label fw-bold">Start Time</label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    {{ form.start_hour.label(class="form-label") }}
+                                    {{ form.start_hour(class="form-control" + (" is-invalid" if form.start_hour.errors else "")) }}
+                                    {% for error in form.start_hour.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-4">
+                                    {{ form.start_minute.label(class="form-label") }}
+                                    {{ form.start_minute(class="form-control" + (" is-invalid" if form.start_minute.errors else "")) }}
+                                    {% for error in form.start_minute.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-4">
+                                    {{ form.start_ampm.label(class="form-label") }}
+                                    {{ form.start_ampm(class="form-control" + (" is-invalid" if form.start_ampm.errors else "")) }}
+                                    {% for error in form.start_ampm.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">When the shift begins</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label fw-bold">End Time</label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    {{ form.end_hour.label(class="form-label") }}
+                                    {{ form.end_hour(class="form-control" + (" is-invalid" if form.end_hour.errors else "")) }}
+                                    {% for error in form.end_hour.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-4">
+                                    {{ form.end_minute.label(class="form-label") }}
+                                    {{ form.end_minute(class="form-control" + (" is-invalid" if form.end_minute.errors else "")) }}
+                                    {% for error in form.end_minute.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-4">
+                                    {{ form.end_ampm.label(class="form-label") }}
+                                    {{ form.end_ampm(class="form-control" + (" is-invalid" if form.end_ampm.errors else "")) }}
+                                    {% for error in form.end_ampm.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">When the shift ends</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            {{ form.description.label(class="form-label fw-bold") }}
+                            {{ form.description(class="form-control", placeholder="e.g. 5AM to 1PM shift for baristas", rows="3") }}
+                            <small class="form-text text-muted">Optional shift description</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            {{ form.is_active.label(class="form-label fw-bold") }}
+                            <div class="form-check form-switch mt-3">
+                                {{ form.is_active(class="form-check-input", role="switch") }}
+                                <label class="form-check-label" for="{{ form.is_active.id }}">Active Shift</label>
+                            </div>
+                            <small class="form-text text-muted">Disable to make this shift inactive</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label fw-bold">Duration</label>
+                            <div class="form-control-plaintext border rounded p-2 bg-light" id="durationDisplay">
+                                <span id="durationText">--</span>
+                                <span id="durationError" class="text-danger d-none">End time must be after start time</span>
+                            </div>
+                            <small class="form-text text-muted">Calculated automatically</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{{ url_for('shifts.list') }}" class="btn btn-secondary me-md-2">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save me-1"></i> Update Shift
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Calculate duration when time changes
+    $('[id$="_hour"], [id$="_minute"], [id$="_ampm"]').on('change', function() {
+        calculateDuration();
+    });
+
+    function calculateDuration() {
+        const startHour = $('#start_hour').val();
+        const startMinute = $('#start_minute').val();
+        const startAmPm = $('#start_ampm').val();
+        
+        const endHour = $('#end_hour').val();
+        const endMinute = $('#end_minute').val();
+        const endAmPm = $('#end_ampm').val();
+
+        if (startHour && startMinute && startAmPm && endHour && endMinute && endAmPm) {
+            const startTimeStr = `${startHour}:${startMinute} ${startAmPm}`;
+            const endTimeStr = `${endHour}:${endMinute} ${endAmPm}`;
+            
+            try {
+                const startTime = new Date(`01/01/2000 ${startTimeStr}`);
+                const endTime = new Date(`01/01/2000 ${endTimeStr}`);
+                
+                if (startTime >= endTime) {
+                    $('#durationText').text('--');
+                    $('#durationError').removeClass('d-none');
+                    $('#submitBtn').prop('disabled', true);
+                    
+                    // Highlight end time fields
+                    $('[id$="_hour"], [id$="_minute"], [id$="_ampm"]').removeClass('is-invalid');
+                    $('#end_hour, #end_minute, #end_ampm').addClass('is-invalid');
+                    return;
+                }
+                
+                const diffMs = (endTime - startTime);
+                const diffHrs = Math.floor((diffMs % 86400000) / 3600000);
+                const diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000);
+                
+                $('#durationText').text(`${diffHrs}h ${diffMins}m`);
+                $('#durationError').addClass('d-none');
+                $('[id$="_hour"], [id$="_minute"], [id$="_ampm"]').removeClass('is-invalid');
+                $('#submitBtn').prop('disabled', false);
+            } catch (e) {
+                console.error('Error calculating duration:', e);
+            }
+        }
+    }
+
+    // Initial calculation
+    calculateDuration();
+
+    // Form submission handling
+    $('#shiftForm').on('submit', function(e) {
+        const startHour = $('#start_hour').val();
+        const startMinute = $('#start_minute').val();
+        const startAmPm = $('#start_ampm').val();
+        const endHour = $('#end_hour').val();
+        const endMinute = $('#end_minute').val();
+        const endAmPm = $('#end_ampm').val();
+
+        if (startHour && startMinute && startAmPm && endHour && endMinute && endAmPm) {
+            const startTime = new Date(`01/01/2000 ${startHour}:${startMinute} ${startAmPm}`);
+            const endTime = new Date(`01/01/2000 ${endHour}:${endMinute} ${endAmPm}`);
+            
+            if (startTime >= endTime) {
+                e.preventDefault();
+                showToast('Error: End time must be after start time', 'danger');
+                return false;
+            }
+        }
+        
+        // Validate grace period
+        const gracePeriod = parseInt($('#grace_period').val());
+        if (gracePeriod < 0 || gracePeriod > 60) {
+            e.preventDefault();
+            showToast('Error: Grace period must be between 0 and 60 minutes', 'danger');
+            return false;
+        }
+
+        // Show loading state
+        $('#submitBtn').prop('disabled', true);
+        $('#submitBtn').html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...');
+        return true;
+    });
+
+    function showToast(message, type) {
+        // Remove any existing toasts
+        $('.toast').remove();
+        
+        const toast = `
+        <div class="toast show align-items-center text-white bg-${type} border-0 position-fixed bottom-0 end-0 m-3" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>`;
+        
+        $('body').append(toast);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            $('.toast').remove();
+        }, 5000);
+    }
+});
+</script>
+
+<style>
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0b5ed7;
+    }
+    
+    #durationDisplay {
+        min-height: 38px;
+    }
+    
+    #durationError {
+        display: none;
+    }
+    
+    .toast {
+        z-index: 1100;
+    }
+</style>
+{% endblock %}

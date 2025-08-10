@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}User Shift Report - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-user-clock me-2"></i>Shift Report for {{ user.username }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('attendance.list_attendance') }}">Attendance</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">User Report</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-md-4 text-end">
+            <form method="get" class="row g-2">
+                <div class="col-md-5">
+                    <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
+                </div>
+                <div class="col-md-5">
+                    <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-lg mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>User Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <strong>Username:</strong> {{ user.username }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Current Shift:</strong> 
+                        {% if user.current_shift %}
+                            {{ user.current_shift.name }} ({{ user.current_shift.start_time|format_time }} - {{ user.current_shift.end_time|format_time }})
+                        {% else %}
+                            Not assigned
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <strong>Role:</strong> {{ user.role|title }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong> 
+                        <span class="badge bg-{% if user.active %}success{% else %}danger{% endif %}">
+                            {% if user.active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{{ attendances|length }}</h5>
+                                    <p class="card-text">Shifts Worked</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{{ order_stats|sum(attribute='order_count') }}</h5>
+                                    <p class="card-text">Total Orders</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Attendance Records</h5>
+                </div>
+                <div class="card-body">
+                    {% if attendances %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Shift</th>
+                                        <th>Clock In</th>
+                                        <th>Clock Out</th>
+                                        <th>Hours</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attendance in attendances %}
+                                    <tr>
+                                        <td>{{ attendance.date }}</td>
+                                        <td>{{ attendance.shift.name }}</td>
+                                        <td>{{ attendance.clock_in_time|format_datetime }}</td>
+                                        <td>
+                                            {% if attendance.clock_out_time %}
+                                                {{ attendance.clock_out_time|format_datetime }}
+                                            {% else %}
+                                                <span class="badge bg-warning">Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if attendance.hours_worked %}
+                                                {{ "%.2f"|format(attendance.hours_worked) }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No attendance records found for this period</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Performance by Shift</h5>
+                </div>
+                <div class="card-body">
+                    {% if order_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Shift</th>
+                                        <th>Orders</th>
+                                        <th>Total Sales</th>
+                                        <th>Avg. Order</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in order_stats %}
+                                    <tr>
+                                        <td>{{ stat.name }}</td>
+                                        <td>{{ stat.order_count }}</td>
+                                        <td>{{ stat.total_sales|format_currency }}</td>
+                                        <td>
+                                            {% if stat.order_count > 0 %}
+                                                {{ (stat.total_sales / stat.order_count)|format_currency }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-active">
+                                        <th>Total</th>
+                                        <th>{{ order_stats|sum(attribute='order_count') }}</th>
+                                        <th>{{ order_stats|sum(attribute='total_sales')|format_currency }}</th>
+                                        <th>
+                                            {% set total_orders = order_stats|sum(attribute='order_count') %}
+                                            {% if total_orders > 0 %}
+                                                {{ (order_stats|sum(attribute='total_sales') / total_orders)|format_currency }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div class="mt-4">
+                            <canvas id="performanceChart" height="200"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">No order data found for this period</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-2">
+        <a href="{{ url_for('attendance.list_attendance') }}" class="btn btn-secondary me-md-2">
+            <i class="fas fa-arrow-left me-1"></i> Back to Attendance
+        </a>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print me-1"></i> Print Report
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    {% if order_stats %}
+    // Performance Chart
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    const performanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ order_stats|map(attribute='name')|list|tojson }},
+            datasets: [{
+                label: 'Number of Orders',
+                data: {{ order_stats|map(attribute='order_count')|list|tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Total Sales',
+                data: {{ order_stats|map(attribute='total_sales')|list|tojson }},
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+                type: 'line',
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Orders'
+                    }
+                },
+                y1: {
+                    position: 'right',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Total Sales'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Print styling
+    window.onbeforeprint = function() {
+        $('.card').addClass('border-0 shadow-none');
+    };
+    window.onafterprint = function() {
+        $('.card').removeClass('border-0 shadow-none');
+    };
+});
+</script>
+
+<style>
+    @media print {
+        body {
+            padding: 20px;
+            font-size: 12px;
+        }
+        .card-header {
+            background-color: #f8f9fa !important;
+            color: #000 !important;
+            padding: 10px;
+        }
+        .table th, .table td {
+            padding: 4px;
+        }
+        .no-print {
+            display: none !important;
+        }
+        .container-fluid {
+            max-width: 100%;
+            padding: 0;
+        }
+    }
+</style>
+{% endblock %}

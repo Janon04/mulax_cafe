@@ -15,6 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
 
     <style>
         :root {
@@ -387,6 +388,17 @@
             border: none;
         }
 
+        /* Shift Status Badges */
+        .badge-shift-active {
+            background-color: var(--success-500);
+        }
+        .badge-shift-inactive {
+            background-color: var(--secondary-500);
+        }
+        .badge-shift-current {
+            background-color: var(--warning-500);
+        }
+
         /* Responsive Adjustments */
         @media (max-width: 992px) {
             .sidebar {
@@ -492,12 +504,12 @@
                 <div class="sidebar-nav-container">
                     <ul class="sidebar-nav">
                         {% if current_user.role in ['admin', 'manager'] %}
-    <li class="nav-item">
-        <a class="sidebar-nav-link" href="{{ url_for('main.dashboard') }}">
-            <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
-        </a>
-    </li>
-{% endif %}
+                            <li class="nav-item">
+                                <a class="sidebar-nav-link" href="{{ url_for('main.dashboard') }}">
+                                    <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
+                                </a>
+                            </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a class="sidebar-nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#ordersMenu" aria-expanded="false">
                                 <i class="fas fa-box"></i><span>Quick Orders</span>
@@ -518,6 +530,29 @@
                                 </ul>
                             </div>
                         </li>
+                        {% if current_user.role in ['admin', 'manager'] %}
+<li class="nav-item">
+    <a class="sidebar-nav-link d-flex align-items-center" href="#waitersSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="waitersSubmenu">
+        <i class="fas fa-user-tie"></i>
+        <span>Waiters</span>
+        <i class="fas fa-chevron-down ms-auto menu-toggle"></i>
+    </a>
+    <div class="collapse sidebar-submenu" id="waitersSubmenu">
+        <ul class="sidebar-nav">
+            <li class="nav-item">
+                <a class="sidebar-nav-link" href="{{ url_for('waiters.list_waiters') }}">
+                    <i class="fas fa-users"></i><span>All Waiters</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="sidebar-nav-link" href="{{ url_for('waiters.register_waiter') }}">
+                    <i class="fas fa-user-plus"></i><span>Add Waiter</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
+{% endif %}
 
                         <li class="nav-item">
                             <a class="sidebar-nav-link d-flex align-items-center" href="#productSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="productSubmenu">
@@ -579,6 +614,32 @@
                                 <i class="fas fa-utensils"></i><span>Kitchen</span>
                             </a>
                         </li>
+                        
+                        <!-- Shift Management Section -->
+                        {% if current_user.role in ['admin', 'manager'] %}
+                        <li class="nav-item">
+                            <a class="sidebar-nav-link d-flex align-items-center" href="#shiftSubmenu" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="shiftSubmenu">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Shifts</span>
+                                <i class="fas fa-chevron-down ms-auto menu-toggle"></i>
+                            </a>
+                            <div class="collapse sidebar-submenu" id="shiftSubmenu">
+                                <ul class="sidebar-nav">
+                                    <li class="nav-item">
+                                        <a class="sidebar-nav-link" href="{{ url_for('shifts.shift_list') }}">
+                                            <i class="fas fa-list"></i><span>All Shifts</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="sidebar-nav-link" href="{{ url_for('shifts.create_shift') }}">
+                                            <i class="fas fa-plus-circle"></i><span>Create Shift</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        {% endif %}
+
                         {% if current_user.role in ['manager'] %}
                         <li class="nav-item">
                             <a class="sidebar-nav-link" href="{{ url_for('auth.manage_users') }}">
@@ -588,6 +649,7 @@
                         {% endif %}
                     </ul>
                 </div>
+
                 <div class="sidebar-footer p-3">
                     <button class="sidebar-toggle btn btn-sm btn-outline-light w-100" id="sidebarToggle">
                         <i class="bi bi-chevron-double-left"></i> <span>Collapse</span>
@@ -603,7 +665,6 @@
                             <h4>Welcome, {{ current_user.username }}!</h4>
                         </div>
                         <div class="user-profile">
-                            <!-- <img src="{{ url_for('static', filename='images') }}" alt="User Avatar" class="user-avatar"> -->
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-user-circle me-1"></i> Account
@@ -651,17 +712,19 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-                    
-                    {% block auth_content %}
-                        <!-- This block will be overridden by auth/login.html -->
+                    {% endif %}
+                {% endwith %}
+                
+                {% block auth_content %}
+                    {% if form is defined %}
                         <form method="POST" action="{{ url_for('auth.login') }}">
                             {{ form.hidden_tag() }}
                             
                             <div class="mb-3">
                                 <label for="username" class="form-label">Username</label>
-                                {{ form.username(class="form-control", id="username", placeholder="Enter your username") }}
+    {% if form.username is defined %}
+        {{ form.username(class="form-control", id="username", placeholder="Enter your username") }}
+    {% endif %}
                                 {% if form.username.errors %}
                                     <div class="invalid-feedback d-block">
                                         {% for error in form.username.errors %}
@@ -694,107 +757,116 @@
                                 </button>
                             </div>
                         </form>
-                        
-                        <div class="mt-3 text-center">
-                            {% if config.ENABLE_REGISTRATION %}
-                                {% if current_user.is_authenticated %}
-        <a href="{{ url_for('auth.edit_user', user_id=current_user.id) }}" class="text-muted">Edit My Account</a>
-    {% endif %}
-    Register</a>
+                    {% endif %}
+                    
+                    <div class="mt-3 text-center">
+                        {% if config.ENABLE_REGISTRATION %}
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('auth.edit_user', user_id=current_user.id) }}" class="text-muted">Edit My Account</a>
                             {% endif %}
-                        </div>
-                    {% endblock %}
-                </div>
+                        {% endif %}
+                    </div>
+                {% endblock %}
             </div>
-        {% endif %}
+        </div>
+    {% endif %}
 
-        <!-- Scripts -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Only run these scripts if the user is authenticated
-                {% if current_user.is_authenticated %}
-                    // Sidebar toggle functionality
-                    const sidebarToggle = document.getElementById('sidebarToggle');
-                    const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
-                    const sidebar = document.getElementById('sidebar');
-                    const mainContent = document.getElementById('main-content');
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only run these scripts if the user is authenticated
+            {% if current_user.is_authenticated %}
+                // Sidebar toggle functionality
+                const sidebarToggle = document.getElementById('sidebarToggle');
+                const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+                const sidebar = document.getElementById('sidebar');
+                const mainContent = document.getElementById('main-content');
 
-                    function toggleSidebar() {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('collapsed');
-                        
-                        // Update toggle button icon
-                        const icon = sidebarToggle.querySelector('i');
-                        if (sidebar.classList.contains('collapsed')) {
-                            icon.classList.remove('bi-chevron-double-left');
-                            icon.classList.add('bi-chevron-double-right');
-                            sidebarToggle.querySelector('span').textContent = 'Expand';
-                        } else {
-                            icon.classList.remove('bi-chevron-double-right');
-                            icon.classList.add('bi-chevron-double-left');
-                            sidebarToggle.querySelector('span').textContent = 'Collapse';
-                        }
+                function toggleSidebar() {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('collapsed');
+                    
+                    // Update toggle button icon
+                    const icon = sidebarToggle.querySelector('i');
+                    if (sidebar.classList.contains('collapsed')) {
+                        icon.classList.remove('bi-chevron-double-left');
+                        icon.classList.add('bi-chevron-double-right');
+                        sidebarToggle.querySelector('span').textContent = 'Expand';
+                    } else {
+                        icon.classList.remove('bi-chevron-double-right');
+                        icon.classList.add('bi-chevron-double-left');
+                        sidebarToggle.querySelector('span').textContent = 'Collapse';
                     }
+                }
 
-                    if (sidebarToggle) {
-                        sidebarToggle.addEventListener('click', toggleSidebar);
+                if (sidebarToggle) {
+                    sidebarToggle.addEventListener('click', toggleSidebar);
+                }
+
+                if (mobileSidebarToggle) {
+                    mobileSidebarToggle.addEventListener('click', function() {
+                        sidebar.classList.toggle('show');
+                    });
+                }
+
+                // Responsive behavior
+                window.addEventListener('resize', function() {
+                    if (window.innerWidth > 992) {
+                        sidebar.classList.remove('show');
                     }
+                });
 
-                    if (mobileSidebarToggle) {
-                        mobileSidebarToggle.addEventListener('click', function() {
-                            sidebar.classList.toggle('show');
-                        });
-                    }
-
-                    // Responsive behavior
-                    window.addEventListener('resize', function() {
-                        if (window.innerWidth > 992) {
-                            sidebar.classList.remove('show');
-                        }
-                    });
-
-                    // Initialize tooltips
-                    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-                        return new bootstrap.Tooltip(tooltipTriggerEl);
-                    });
-
-                    // Submenu arrow rotation
-                    document.querySelectorAll('.sidebar-nav-link[data-bs-toggle="collapse"]').forEach(link => {
-                        link.addEventListener('click', function() {
-                            const icon = this.querySelector('.menu-toggle');
-                            if (icon) {
-                                icon.classList.toggle('fa-chevron-down');
-                                icon.classList.toggle('fa-chevron-up');
-                            }
-                        });
-                    });
-                {% endif %}
-
-                // Enable Bootstrap tooltips everywhere
+                // Initialize tooltips
                 var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
                     return new bootstrap.Tooltip(tooltipTriggerEl);
                 });
 
-                // Enable Bootstrap popovers everywhere
-                var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-                var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-                    return new bootstrap.Popover(popoverTriggerEl);
-                });
-
-                // Dismiss alerts after 5 seconds
-                setTimeout(function() {
-                    var alerts = document.querySelectorAll('.alert');
-                    alerts.forEach(function(alert) {
-                        var bsAlert = new bootstrap.Alert(alert);
-                        bsAlert.close();
+                // Submenu arrow rotation
+                document.querySelectorAll('.sidebar-nav-link[data-bs-toggle="collapse"]').forEach(link => {
+                    link.addEventListener('click', function() {
+                        const icon = this.querySelector('.menu-toggle');
+                        if (icon) {
+                            icon.classList.toggle('fa-chevron-down');
+                            icon.classList.toggle('fa-chevron-up');
+                        }
                     });
-                }, 5000);
-            });
-        </script>
+                });
+            {% endif %}
 
-        {% block scripts %}{% endblock %}
-    </body>
-    </html>
+            // Enable Bootstrap tooltips everywhere
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Enable Bootstrap popovers everywhere
+            var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
+
+            // Dismiss alerts after 5 seconds
+            setTimeout(function() {
+                var alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    var bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+
+            // Initialize DataTables if present
+            $('.datatable').DataTable({
+                responsive: true,
+                stateSave: true
+            });
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

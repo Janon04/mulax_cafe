@@ -26,8 +26,8 @@
                         <dt class="col-sm-4">Table Number:</dt>
                         <dd class="col-sm-8">{{ order.table_number }}</dd>
                         
-                        <dt class="col-sm-4">Server:</dt>
-                        <dd class="col-sm-8">{{ recorded_by_user }}</dd>
+                        <dt class="col-sm-4">Waiter:</dt>
+                        <dd class="col-sm-8">{{ order.waiter.name if order.waiter else 'N/A' }}</dd>
                         
                         <dt class="col-sm-4">Created:</dt>
                         <dd class="col-sm-8">{{ order.date.strftime('%Y-%m-%d %H:%M') }}</dd>

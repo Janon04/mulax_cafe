@@ -8,6 +8,9 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
 from app.extensions import db, migrate
+from app.models import Shift
+
+
 
 # Initialize core extensions
 db = SQLAlchemy()
@@ -67,7 +70,8 @@ def register_blueprints(app):
         product_bp,
         coffee_bp,
         kitchen_bp,
-        orders_bp
+        orders_bp,
+        shifts_bp
     )
 
     app.register_blueprint(main_bp)
@@ -77,6 +81,7 @@ def register_blueprints(app):
     app.register_blueprint(coffee_bp, url_prefix='/coffee')
     app.register_blueprint(kitchen_bp, url_prefix='/kitchen')
     app.register_blueprint(orders_bp, url_prefix='/orders')
+    app.register_blueprint(shifts_bp, url_prefix='/shifts')
 
 
 def create_default_users(app):

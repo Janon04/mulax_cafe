@@ -44,7 +44,8 @@
                     <th>Total</th>
                     <th>Status</th>
                     <th>Time</th>
-                    <th style="min-width: 160px;">Actions</th>
+                    <th>Actions</th>
+                    <th style="min-width: 160px;">Shift</th>
                 </tr>
             </thead>
             <tbody>
@@ -69,7 +70,13 @@
                         </span>
                     </td>
 
-                    <td>{{ order.recorder.username }}</td>
+                    <td>
+                        {% set waiter = None %}
+                        {% if order.waiter_id %}
+                            {% set waiter = waiters|selectattr('id', 'equalto', order.waiter_id)|first %}
+                        {% endif %}
+                        {{ waiter.name if waiter else 'N/A' }}
+                    </td>
                     <td>{{ order.items|length }}</td>
                     <td>Rwf:{{ "%.2f"|format(order.total_amount) }}</td>
 
@@ -122,6 +129,13 @@
                                 <i class="fas fa-check fa-xs"></i>
                             </button>
                         </form>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if order.shift %}
+                            {{ order.shift.name }} ({{ order.shift.start_time.strftime('%H:%M') }}-{{ order.shift.end_time.strftime('%H:%M') }})
+                        {% else %}
+                            No shift
                         {% endif %}
                     </td>
                 </tr>

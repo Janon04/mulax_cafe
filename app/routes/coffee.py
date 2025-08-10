@@ -29,39 +29,56 @@ def list_sales():
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_sale():
+    from app.models import Waiter
     if request.method == 'POST':
         product_id = request.form.get('product_id')
         quantity = float(request.form.get('quantity'))
         unit_price = float(request.form.get('unit_price'))
         payment_mode = request.form.get('payment_mode')
-        
+        waiter_id_raw = request.form.get('waiter_id')
+        try:
+            waiter_id = int(waiter_id_raw) if waiter_id_raw else None
+        except (TypeError, ValueError):
+            waiter_id = None
+
         product = Product.query.get_or_404(product_id)
-        
+
         if product.current_stock < quantity:
             flash(f'Not enough stock available. Only {product.current_stock} {product.unit} left', 'danger')
             return redirect(url_for('coffee.new_sale'))
-        
+
         total_sales = quantity * unit_price
-        
+
+        # Assign current shift
+        from app.models import Shift
+        now = datetime.now().time()
+        current_shift = Shift.query.filter(Shift.start_time <= now, Shift.end_time > now, Shift.is_active == True).first()
+        if not current_shift:
+            flash('No active shift found for the current time.', 'danger')
+            return redirect(url_for('coffee.new_sale'))
+
         sale = CoffeeSale(
             product_id=product.id,
             quantity_sold=quantity,
             unit_price=unit_price,
             total_sales=total_sales,
             payment_mode=payment_mode,
-            recorded_by=current_user.id
+            recorded_by=current_user.id,
+            waiter_id=waiter_id,
+            shift_id=current_shift.id
         )
-        
+
         product.current_stock -= quantity
-        
+
         db.session.add(sale)
         db.session.commit()
-        
+
         flash('Sale recorded successfully', 'success')
         return redirect(url_for('coffee.list_sales'))
-    
+
     products = Product.query.order_by(Product.name).all()
-    return render_template('coffee/form.html', products=products)
+    waiters = Waiter.query.filter_by(is_active=True).order_by(Waiter.name).all()
+    return render_template('coffee/form.html', products=products, waiters=waiters)
 @bp.route('/report')
 @login_required
 def sales_report():
@@ -88,6 +105,7 @@ def sales_report():
         .all()
     )
     
+    from app.models import Waiter
     # Most recent 10 sales
     recent_sales = (
         CoffeeSale.query
@@ -95,13 +113,14 @@ def sales_report():
         .limit(10)
         .all()
     )
-    
+    waiters = Waiter.query.filter_by(is_active=True).all()
     return render_template(
         'coffee/report.html',
         sales_by_product=sales_by_product,
         sales_by_payment=sales_by_payment,
         recent_sales=recent_sales,
-        currency='Rwf'
+        currency='Rwf',
+        waiters=waiters
     )
 
 

@@ -6,6 +6,10 @@ from app.auth.forms import OrderForm
 from app import db
 from flask import jsonify
 from datetime import timedelta
+from flask import current_app
+from app.models import Shift
+from app.models import NotificationLog
+from app.models import Waiter
 
 
 
@@ -14,19 +18,68 @@ bp = Blueprint('orders', __name__, url_prefix='/orders')
 @bp.route('/')
 @login_required
 def list_orders():
-    """List all orders with filtering options"""
-    status = request.args.get('status', 'all')
-    query = Order.query.order_by(Order.date.desc())
+    """List all orders with filtering options including shift filtering"""
+    try:
+        # Get filter parameters
+        status = request.args.get('status', 'all')
+        shift_id = request.args.get('shift_id')
+        user_id = request.args.get('user_id')
+        date_filter = request.args.get('date')
+        
+        # Base query with joined loading for performance
+        query = Order.query.options(
+            db.joinedload(Order.client),
+            db.joinedload(Order.table),
+            db.joinedload(Order.shift),
+            db.joinedload(Order.user),
+            db.joinedload(Order.recorder)
+        ).order_by(Order.date.desc())
+        
+        # Apply filters
+        if status != 'all':
+            query = query.filter(Order.status == status)
+            
+        if shift_id:
+            query = query.filter(Order.shift_id == shift_id)
+            
+        if user_id:
+            query = query.filter(Order.user_id == user_id)
+            
+        if date_filter:
+            try:
+                filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
+                query = query.filter(db.func.date(Order.date) == filter_date)
+            except ValueError:
+                flash('Invalid date format. Using default filter.', 'warning')
+        
+        # For non-admin users, only show their own orders
+        if current_user.role not in ['admin', 'manager']:
+            query = query.filter(Order.user_id == current_user.id)
+            
+        # Get active shifts and users for filter dropdowns
+        active_shifts = Shift.query.filter_by(is_active=True).order_by(Shift.name).all()
+        active_users = User.query.filter_by(active=True).order_by(User.username).all()
+        
+        # Execute query with limit
+        orders = query.limit(100).all()
+        
+        from app.models import Waiter
+        waiters = Waiter.query.filter_by(is_active=True).all()
+        return render_template('orders/list.html',
+                            orders=orders,
+                            status=status,
+                            shift_id=shift_id,
+                            user_id=user_id,
+                            date_filter=date_filter,
+                            active_shifts=active_shifts,
+                            active_users=active_users,
+                            waiters=waiters)
     
-    if status != 'all':
-        query = query.filter(Order.status == status)
+    except Exception as e:
+        current_app.logger.error(f"Error listing orders: {str(e)}")
+        flash('Error loading orders. Please try again.', 'danger')
+        return redirect(url_for('main.dashboard'))
     
-    if current_user.role == 'server':
-        query = query.filter(Order.recorded_by == current_user.id)
-    
-    orders = query.limit(100).all()
-    return render_template('orders/list.html', orders=orders, status=status)
-
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_order():
@@ -34,65 +87,143 @@ def new_order():
     form = OrderForm()
     products = Product.query.order_by(Product.name).all()
     tables = Table.query.order_by(Table.number).all()
-    
+
+    waiters = Waiter.query.filter_by(is_active=True).order_by(Waiter.name).all()
+
+    # Automatically determine current shift based on time
+    now = datetime.now().time()
+    morning_start = datetime.strptime('07:00', '%H:%M').time()
+    evening_start = datetime.strptime('17:00', '%H:%M').time()
+    midnight = datetime.strptime('00:00', '%H:%M').time()
+    current_shift = None
+    if morning_start <= now < evening_start:
+        current_shift = Shift.query.filter_by(name='Morning', is_active=True).first()
+    elif evening_start <= now or now < morning_start:
+        current_shift = Shift.query.filter_by(name='Evening', is_active=True).first()
+
     if request.method == 'POST':
         table_id = request.form.get('table_id')
         notes = request.form.get('notes', '')
-        
+        waiter_id_raw = request.form.get('waiter_id')
+        try:
+            waiter_id = int(waiter_id_raw) if waiter_id_raw else None
+        except (TypeError, ValueError):
+            waiter_id = None
+
+        # Validate table selection
         if not table_id:
             flash('Table selection is required', 'danger')
-            return render_template('orders/new.html', form=form, products=products, tables=tables)
-        
+            return render_template('orders/new.html',
+                                   form=form,
+                                   products=products,
+                                   tables=tables,
+                                   waiters=waiters,
+                                   current_shift=None)
+
         table = Table.query.get(table_id)
         if not table:
             flash('Invalid table selected', 'danger')
-            return render_template('orders/new.html', form=form, products=products, tables=tables)
-            
+            return render_template('orders/new.html',
+                                   form=form,
+                                   products=products,
+                                   tables=tables,
+                                   waiters=waiters,
+                                   current_shift=None)
+
         if table.is_occupied:
             flash('This table is currently occupied', 'danger')
-            return render_template('orders/new.html', form=form, products=products, tables=tables)
-        
-        # Create the order
-        order = Order(
-            table_id=table_id,
-            recorded_by=current_user.id,
-            status='pending',
-            notes=notes,
-            total_amount=0  # Will be calculated from items
-        )
-        
-        # Mark table as occupied
-        table.is_occupied = True
-        
-        db.session.add(order)
-        db.session.flush()  # Get the order ID
-        
-        # Process order items
-        total_amount = 0
-        for product in products:
-            quantity = int(request.form.get(f'product_{product.id}', 0))
-            if quantity > 0:
-                item = OrderItem(
-                    order_id=order.id,
-                    product_id=product.id,
-                    quantity=quantity,
-                    unit_price=product.unit_price,
-                    special_instructions=request.form.get(f'notes_{product.id}', '')
-                )
-                db.session.add(item)
-                total_amount += quantity * product.unit_price
-        
-        if total_amount == 0:
+            return render_template('orders/new.html',
+                                   form=form,
+                                   products=products,
+                                   tables=tables,
+                                   waiters=waiters,
+                                   current_shift=None)
+
+        # Verify waiter exists
+        if waiter_id:
+            waiter = Waiter.query.get(waiter_id)
+            if not waiter or not waiter.is_active:
+                flash('Invalid waiter selected', 'danger')
+                return render_template('orders/new.html',
+                                       form=form,
+                                       products=products,
+                                       tables=tables,
+                                       waiters=waiters,
+                                       current_shift=None)
+
+        # Create order
+        try:
+            order = Order(
+                table_id=table_id,
+                waiter_id=waiter_id,
+                status='pending',
+                notes=notes,
+                total_amount=0,
+                shift_id=current_shift.id if current_shift else None,
+                user_id=current_user.id
+            )
+
+            # Mark table as occupied
+            table.is_occupied = True
+
+            db.session.add(order)
+            db.session.flush()
+
+            # Process order items
+            total_amount = 0
+            items_added = False
+
+            for product in products:
+                quantity_raw = request.form.get(f'product_{product.id}', 0)
+                try:
+                    quantity = float(quantity_raw)
+                except (TypeError, ValueError):
+                    quantity = 0
+                if quantity > 0:
+                    items_added = True
+                    item = OrderItem(
+                        order_id=order.id,
+                        product_id=product.id,
+                        quantity=quantity,
+                        unit_price=product.unit_price,
+                        special_instructions=request.form.get(f'notes_{product.id}', '')
+                    )
+                    db.session.add(item)
+                    total_amount += quantity * product.unit_price
+
+            if not items_added:
+                db.session.rollback()
+                flash('You must add at least one item to the order', 'danger')
+                return render_template('orders/new.html',
+                                       form=form,
+                                       products=products,
+                                       tables=tables,
+                                       waiters=waiters,
+                                       current_shift=current_shift)
+
+            order.total_amount = total_amount
+            db.session.commit()
+
+            flash('Order created successfully', 'success')
+            return redirect(url_for('orders.view_order', order_id=order.id))
+
+        except Exception as e:
             db.session.rollback()
-            flash('You must add at least one item to the order', 'danger')
-            return render_template('orders/new.html', form=form, products=products, tables=tables)
-        
-        order.total_amount = total_amount
-        db.session.commit()
-        flash('Order created successfully', 'success')
-        return redirect(url_for('orders.view_order', order_id=order.id))
-    
-    return render_template('orders/new.html', form=form, products=products, tables=tables)
+            current_app.logger.error(f"Error creating order: {str(e)}")
+            flash('An error occurred while creating the order. Please try again.', 'danger')
+            return render_template('orders/new.html',
+                                   form=form,
+                                   products=products,
+                                   tables=tables,
+                                   waiters=waiters,
+                                   current_shift=current_shift)
+
+    return render_template('orders/new.html',
+                           form=form,
+                           products=products,
+                           tables=tables,
+                           waiters=waiters,
+                           current_shift=current_shift)
 
 @bp.route('/<int:order_id>')
 @login_required

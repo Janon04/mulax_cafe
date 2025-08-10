@@ -8,7 +8,7 @@ def admin_required(f):
         if not current_user.is_authenticated:
             flash('Please log in to access this page.', 'danger')
             return redirect(url_for('auth.login'))
-        if not current_user.role == 'admin':
+        if not current_user.is_admin and current_user.role != 'system_control':
             flash('Administrator privileges required.', 'danger')
             return redirect(url_for('main.dashboard'))
         return f(*args, **kwargs)
@@ -20,7 +20,7 @@ def admin_or_manager_required(f):
         if not current_user.is_authenticated:
             flash('Please log in to access this page.', 'danger')
             return redirect(url_for('auth.login'))
-        if current_user.role not in ['admin', 'manager']:
+        if current_user.role not in ['admin', 'manager', 'system_control']:
             flash('Manager or administrator privileges required.', 'danger')
             return redirect(url_for('main.dashboard'))
         return f(*args, **kwargs)
@@ -51,3 +51,18 @@ def role_required(*roles):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+def requires_shift_management(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('Please log in to access this page.', 'danger')
+            return redirect(url_for('auth.login'))
+        
+        # Only allow admin or manager
+        if not (current_user.is_admin or current_user.role == 'manager'):
+            flash('You do not have permission to manage shifts.', 'danger')
+            return redirect(url_for('main.dashboard'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
