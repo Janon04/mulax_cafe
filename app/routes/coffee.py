@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, make_response
+from flask import Blueprint, render_template, redirect, url_for, flash, request, make_response, jsonify, send_file
 from flask_login import login_required, current_user
-from app.models import CoffeeSale, Product, StockMovement
-from flask import jsonify
+from flask import render_template_string
+from app.models import Order, CoffeeSale, Product, Waiter, StockMovement, Shift
 from app import db
+from sqlalchemy import func
 from datetime import datetime, timedelta
 from io import BytesIO
 import pandas as pd
@@ -12,13 +13,13 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from openpyxl import Workbook
-from flask import send_file
-from io import BytesIO
 from xhtml2pdf import pisa
-from sqlalchemy import func
-from flask import make_response, render_template_string
 
 bp = Blueprint('coffee', __name__)
+
+# ==============================================
+# ROUTES FOR SALES MANAGEMENT
+# ==============================================
 
 @bp.route('/')
 @login_required
@@ -29,13 +30,13 @@ def list_sales():
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_sale():
-    from app.models import Waiter
     if request.method == 'POST':
         product_id = request.form.get('product_id')
         quantity = float(request.form.get('quantity'))
         unit_price = float(request.form.get('unit_price'))
         payment_mode = request.form.get('payment_mode')
         waiter_id_raw = request.form.get('waiter_id')
+        
         try:
             waiter_id = int(waiter_id_raw) if waiter_id_raw else None
         except (TypeError, ValueError):
@@ -50,9 +51,13 @@ def new_sale():
         total_sales = quantity * unit_price
 
         # Assign current shift
-        from app.models import Shift
         now = datetime.now().time()
-        current_shift = Shift.query.filter(Shift.start_time <= now, Shift.end_time > now, Shift.is_active == True).first()
+        current_shift = Shift.query.filter(
+            Shift.start_time <= now, 
+            Shift.end_time > now, 
+            Shift.is_active == True
+        ).first()
+        
         if not current_shift:
             flash('No active shift found for the current time.', 'danger')
             return redirect(url_for('coffee.new_sale'))
@@ -69,7 +74,6 @@ def new_sale():
         )
 
         product.current_stock -= quantity
-
         db.session.add(sale)
         db.session.commit()
 
@@ -79,6 +83,11 @@ def new_sale():
     products = Product.query.order_by(Product.name).all()
     waiters = Waiter.query.filter_by(is_active=True).order_by(Waiter.name).all()
     return render_template('coffee/form.html', products=products, waiters=waiters)
+
+# ==============================================
+# REPORTING ROUTES
+# ==============================================
+
 @bp.route('/report')
 @login_required
 def sales_report():
@@ -86,12 +95,12 @@ def sales_report():
     sales_by_product = (
         db.session.query(
             Product.name.label('name'),
-            db.func.sum(CoffeeSale.quantity_sold).label('total_quantity'),
-            db.func.sum(CoffeeSale.total_sales).label('total_sales'),
+            func.sum(CoffeeSale.quantity_sold).label('total_quantity'),
+            func.sum(CoffeeSale.total_sales).label('total_sales'),
         )
         .join(CoffeeSale, CoffeeSale.product_id == Product.id)
         .group_by(Product.name)
-        .order_by(db.func.sum(CoffeeSale.total_sales).desc())
+        .order_by(func.sum(CoffeeSale.total_sales).desc())
         .all()
     )
     
@@ -99,21 +108,16 @@ def sales_report():
     sales_by_payment = (
         db.session.query(
             CoffeeSale.payment_mode.label('payment_mode'),
-            db.func.sum(CoffeeSale.total_sales).label('total_sales'),
+            func.sum(CoffeeSale.total_sales).label('total_sales'),
         )
         .group_by(CoffeeSale.payment_mode)
         .all()
     )
     
-    from app.models import Waiter
     # Most recent 10 sales
-    recent_sales = (
-        CoffeeSale.query
-        .order_by(CoffeeSale.date.desc())
-        .limit(10)
-        .all()
-    )
+    recent_sales = CoffeeSale.query.order_by(CoffeeSale.date.desc()).limit(10).all()
     waiters = Waiter.query.filter_by(is_active=True).all()
+    
     return render_template(
         'coffee/report.html',
         sales_by_product=sales_by_product,
@@ -123,20 +127,73 @@ def sales_report():
         waiters=waiters
     )
 
+@bp.route('/general_report')
+@login_required
+def general_report():
+    # Get all coffee sales and orders
+    coffee_sales = CoffeeSale.query.order_by(CoffeeSale.date.desc()).all()
+    orders = Order.query.order_by(Order.date.desc()).all()
 
-bp.route('/report/excel')
+    # Aggregate totals
+    total_coffee_sales = sum(s.total_sales for s in coffee_sales)
+    total_order_sales = sum(o.total_amount for o in orders)
+    grand_total = total_coffee_sales + total_order_sales
+
+    # Prepare recent transactions
+    recent_transactions = [
+        {
+            'type': 'Coffee Sale',
+            'date': s.date,
+            'product': s.product.name,
+            'waiter': s.waiter.name if s.waiter else None,
+            'shift': s.shift.name if s.shift else None,
+            'qty': s.quantity_sold,
+            'unit_price': s.unit_price,
+            'total': s.total_sales,
+            'payment': s.payment_mode
+        } for s in coffee_sales
+    ] + [
+        {
+            'type': 'Order',
+            'date': o.date,
+            'product': ', '.join([item.product.name for item in o.items]),
+            'waiter': o.waiter.name if o.waiter else None,
+            'shift': o.shift.name if o.shift else None,
+            'qty': sum(item.quantity for item in o.items),
+            'unit_price': '',
+            'total': o.total_amount,
+            'payment': ''
+        } for o in orders
+    ]
+    
+    recent_transactions.sort(key=lambda x: x['date'], reverse=True)
+
+    return render_template(
+        'general_report.html',
+        total_coffee_sales=total_coffee_sales,
+        total_order_sales=total_order_sales,
+        grand_total=grand_total,
+        recent_transactions=recent_transactions,
+        currency='Rwf'
+    )
+
+# ==============================================
+# EXPORT ROUTES
+# ==============================================
+
+@bp.route('/report/excel')
 @login_required
 def export_excel():
     # Get sales data
     sales_by_product = db.session.query(
         Product.name,
-        db.func.sum(CoffeeSale.quantity_sold).label('total_quantity'),
-        db.func.sum(CoffeeSale.total_sales).label('total_sales')
-    ).join(CoffeeSale).group_by(Product.name).order_by(db.func.sum(CoffeeSale.total_sales).desc()).all()
+        func.sum(CoffeeSale.quantity_sold).label('total_quantity'),
+        func.sum(CoffeeSale.total_sales).label('total_sales')
+    ).join(CoffeeSale).group_by(Product.name).order_by(func.sum(CoffeeSale.total_sales).desc()).all()
     
     sales_by_payment = db.session.query(
         CoffeeSale.payment_mode,
-        db.func.sum(CoffeeSale.total_sales).label('total_sales')
+        func.sum(CoffeeSale.total_sales).label('total_sales')
     ).group_by(CoffeeSale.payment_mode).all()
     
     # Create DataFrames
@@ -146,18 +203,11 @@ def export_excel():
     # Create Excel file in memory
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        # Sales by Product sheet
         product_df.to_excel(writer, sheet_name='Sales by Product', index=False)
-        
-        # Sales by Payment sheet
         payment_df.to_excel(writer, sheet_name='Sales by Payment', index=False)
         
-        # Get workbook and worksheet objects for formatting
+        # Formatting
         workbook = writer.book
-        product_sheet = writer.sheets['Sales by Product']
-        payment_sheet = writer.sheets['Sales by Payment']
-        
-        # Format headers
         header_format = workbook.add_format({
             'bold': True,
             'text_wrap': True,
@@ -167,32 +217,17 @@ def export_excel():
             'border': 1
         })
         
-        # Apply header format
-        for col_num, value in enumerate(product_df.columns.values):
-            product_sheet.write(0, col_num, value, header_format)
-        
-        for col_num, value in enumerate(payment_df.columns.values):
-            payment_sheet.write(0, col_num, value, header_format)
-        
-        # Auto-adjust column widths
-
-        for i, col in enumerate(product_df.columns):
-            max_len = max(
-                product_df[col].astype(str).map(len).max(),
-                len(str(col))
-            )
-            product_sheet.set_column(i, i, max_len + 2)
-
-        for i, col in enumerate(payment_df.columns):
-            max_len = max(
-                payment_df[col].astype(str).map(len).max(),
-                len(str(col))
-            )
-            payment_sheet.set_column(i, i, max_len + 2)
+        # Apply formatting
+        for sheet_name in ['Sales by Product', 'Sales by Payment']:
+            worksheet = writer.sheets[sheet_name]
+            df = product_df if sheet_name == 'Sales by Product' else payment_df
+            
+            for col_num, value in enumerate(df.columns.values):
+                worksheet.write(0, col_num, value, header_format)
+                max_len = max(df[value].astype(str).map(len).max(), len(value)) + 2
+                worksheet.set_column(col_num, col_num, max_len)
     
     output.seek(0)
-    
-    # Create response
     response = make_response(output.getvalue())
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     response.headers['Content-Disposition'] = 'attachment; filename=coffee_sales_report.xlsx'
@@ -204,39 +239,31 @@ def export_pdf():
     # Get sales data
     sales_by_product = db.session.query(
         Product.name,
-        db.func.sum(CoffeeSale.quantity_sold).label('total_quantity'),
-        db.func.sum(CoffeeSale.total_sales).label('total_sales')
-    ).join(CoffeeSale).group_by(Product.name).order_by(db.func.sum(CoffeeSale.total_sales).desc()).all()
+        func.sum(CoffeeSale.quantity_sold).label('total_quantity'),
+        func.sum(CoffeeSale.total_sales).label('total_sales')
+    ).join(CoffeeSale).group_by(Product.name).order_by(func.sum(CoffeeSale.total_sales).desc()).all()
     
     sales_by_payment = db.session.query(
         CoffeeSale.payment_mode,
-        db.func.sum(CoffeeSale.total_sales).label('total_sales')
+        func.sum(CoffeeSale.total_sales).label('total_sales')
     ).group_by(CoffeeSale.payment_mode).all()
     
     # Create PDF
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
-    
-    # Styles
     styles = getSampleStyleSheet()
-    
-    # Content
     elements = []
     
-    # Title
+    # Title and timestamp
     elements.append(Paragraph("Coffee Sales Report", styles['Title']))
     elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
-    elements.append(Paragraph(" ", styles['Normal']))  # Spacer
+    elements.append(Paragraph(" ", styles['Normal']))
     
     # Sales by Product table
     elements.append(Paragraph("Sales by Product", styles['Heading2']))
     product_data = [['Product', 'Quantity Sold', 'Total Sales']]
     for product in sales_by_product:
-        product_data.append([
-            product.name,
-            f"{product.total_quantity:.2f}",
-            f"Rwf {product.total_sales:.2f}"
-        ])
+        product_data.append([product.name, f"{product.total_quantity:.2f}", f"Rwf {product.total_sales:.2f}"])
     
     product_table = Table(product_data)
     product_table.setStyle(TableStyle([
@@ -251,16 +278,13 @@ def export_pdf():
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
     elements.append(product_table)
-    elements.append(Paragraph(" ", styles['Normal']))  # Spacer
+    elements.append(Paragraph(" ", styles['Normal']))
     
     # Sales by Payment table
     elements.append(Paragraph("Sales by Payment Method", styles['Heading2']))
     payment_data = [['Payment Method', 'Total Sales']]
     for payment in sales_by_payment:
-        payment_data.append([
-            payment.payment_mode,
-            f"Rwf {payment.total_sales:.2f}"
-        ])
+        payment_data.append([payment.payment_mode, f"Rwf {payment.total_sales:.2f}"])
     
     payment_table = Table(payment_data)
     payment_table.setStyle(TableStyle([
@@ -276,44 +300,18 @@ def export_pdf():
     ]))
     elements.append(payment_table)
     
-    # Build PDF
     doc.build(elements)
-    
     buffer.seek(0)
     
-    # Create response
     response = make_response(buffer.getvalue())
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'attachment; filename=coffee_sales_report.pdf'
     return response
 
-@bp.route('/dashboard')
-@login_required
-def dashboard():
-    selected_date_str = request.args.get('selected_date')
-
-    if selected_date_str:
-        # Parse selected date
-        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d')
-        # Create start and end range for that day
-        start = datetime.combine(selected_date.date(), datetime.min.time())
-        end = datetime.combine(selected_date.date(), datetime.max.time())
-
-        # Filter stock movements for that day
-        movements = StockMovement.query.filter(
-            StockMovement.date >= start,
-            StockMovement.date <= end
-        ).all()
-    else:
-        movements = StockMovement.query.order_by(StockMovement.date.desc()).limit(50).all()
-
-    return render_template('dashboard.html', movements=movements, now=datetime.utcnow())
-
 @bp.route('/transactions/excel')
 @login_required
 def export_transactions_excel():
     """Export recent stock movements as an Excel file"""
-    # Fetch recent 50 stock movements
     movements = StockMovement.query.order_by(StockMovement.date.desc()).limit(50).all()
 
     # Build DataFrame
@@ -333,12 +331,12 @@ def export_transactions_excel():
     
     df = pd.DataFrame(data)
 
-    # Create Excel file in memory
+    # Create Excel file
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Recent Transactions')
-
-        # Format headers
+        
+        # Formatting
         workbook = writer.book
         worksheet = writer.sheets['Recent Transactions']
         header_format = workbook.add_format({
@@ -354,20 +352,19 @@ def export_transactions_excel():
             worksheet.set_column(col_num, col_num, col_width)
 
     output.seek(0)
-
     return send_file(
         output,
         as_attachment=True,
         download_name="recent_transactions.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-@bp.route('/download/pdf', methods=['GET'])
+
+@bp.route('/download/pdf')
 @login_required
 def export_transactions_pdf():
     """Download product list as a PDF file"""
     products = Product.query.order_by(Product.name).all()
 
-    # Simple HTML table (you can replace with a real template if you like)
     html = render_template_string("""
     <html>
     <head><style>table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }</style></head>
@@ -397,7 +394,6 @@ def export_transactions_pdf():
     </html>
     """, products=products)
 
-    # Generate PDF
     result = BytesIO()
     pisa_status = pisa.CreatePDF(html, dest=result)
 
@@ -408,7 +404,29 @@ def export_transactions_pdf():
     result.seek(0)
     return send_file(result, as_attachment=True, download_name="product_list.pdf", mimetype='application/pdf')
 
-# ..................................
+# ==============================================
+# DASHBOARD AND UTILITY ROUTES
+# ==============================================
+
+@bp.route('/dashboard')
+@login_required
+def dashboard():
+    selected_date_str = request.args.get('selected_date')
+
+    if selected_date_str:
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d')
+        start = datetime.combine(selected_date.date(), datetime.min.time())
+        end = datetime.combine(selected_date.date(), datetime.max.time())
+
+        movements = StockMovement.query.filter(
+            StockMovement.date >= start,
+            StockMovement.date <= end
+        ).all()
+    else:
+        movements = StockMovement.query.order_by(StockMovement.date.desc()).limit(50).all()
+
+    return render_template('dashboard.html', movements=movements, now=datetime.utcnow())
+
 @bp.route('/get_todays_revenue')
 @login_required
 def get_todays_revenue():
