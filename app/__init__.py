@@ -32,7 +32,7 @@ def format_currency(value):
     if value is None:
         return ""
     try:
-        return "Rwf {:,.2f}".format(float(value))
+        return "{:,.2f}".format(float(value))
     except (ValueError, TypeError):
         return value
 

@@ -5,9 +5,14 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>{% if current_user.role in ['admin', 'manager'] %}All{% else %}My{% endif %} Requisitions</h2>
-    <a href="{{ url_for('requisitions.new_requisition') }}" class="btn" style="background-color: #7B3F00; color: white;">
-        <i class="fas fa-plus"></i> New Requisition
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('requisitions.new_requisition') }}" class="btn" style="background-color: #7B3F00; color: white;">
+            <i class="fas fa-plus"></i> New Requisition
+        </a>
+        <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Go Back
+        </a>
+    </div>
 </div>
 
 <div class="card">
@@ -15,26 +20,38 @@
         Requisition History
     </div>
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
+        <div class="table-responsive" style="min-width: 1000px;">
+            <table class="table table-hover align-middle" style="width: 100%; table-layout: auto;">
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Product</th>
-                        <th>Requested</th>
-                        <th>Current Stock</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th style="white-space: nowrap;">Date</th>
+                        <th style="min-width: 140px;">Product</th>
+                        <th style="min-width: 110px;">Requested</th>
+                        <th style="min-width: 120px;">Current Stock</th>
+                        <th style="min-width: 90px;">Shift</th>
+                        <th style="min-width: 90px;">Status</th>
+                        <th style="width: 1%; white-space: nowrap; text-align: center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for req in requisitions %}
                     <tr>
-                        <td>{{ req.date.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ req.product.name }}</td>
-                        <td>{{ req.requested_qty }} {{ req.unit }}</td>
-                        <td>{{ req.current_stock }} {{ req.unit }}</td>
-                        <td>
+                        <td style="white-space: nowrap;">{{ req.date.strftime('%Y-%m-%d') }}</td>
+                        <td style="max-width: 200px; overflow-wrap: anywhere;">{{ req.product.name }}</td>
+                        <td style="white-space: nowrap;">{{ req.requested_qty }} {{ req.unit }}</td>
+                        <td style="white-space: nowrap;">{{ req.current_stock }} {{ req.unit }}</td>
+                        <td style="white-space: nowrap;">
+                            {% if req.shift %}
+                                {% if req.shift.start_time.hour == 7 and req.shift.end_time.hour == 17 %}
+                                    Day Shift
+                                {% else %}
+                                    Night Shift
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="white-space: nowrap;">
                             <span class="badge 
                                 {% if req.status == 'approved' %}bg-success
                                 {% elif req.status == 'rejected' %}bg-danger
@@ -42,23 +59,24 @@
                                 {{ req.status|title }}
                             </span>
                         </td>
-                        <td>
-                            {% if req.status == 'pending' %}
-                                {% if req.user_id == current_user.id %}
-                                <a href="{{ url_for('requisitions.edit_requisition', id=req.id) }}" class="btn btn-sm btn-outline-secondary">
-                                    Edit
-                                </a>
+                        <td style="text-align: center; white-space: nowrap;">
+                            <div class="d-flex flex-row gap-1 justify-content-center">
+                                {% if req.status == 'pending' %}
+                                    {% if req.user_id == current_user.id %}
+                                    <a href="{{ url_for('requisitions.edit_requisition', id=req.id) }}" class="btn btn-xs btn-outline-secondary p-1" title="Edit" style="font-size: 0.85rem; min-width: 28px;">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if current_user.role in ['admin', 'manager'] %}
+                                    <form action="{{ url_for('requisitions.approve_requisition', id=req.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-xs btn-success p-1" title="Approve" style="font-size: 0.85rem; min-width: 28px;"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    <form action="{{ url_for('requisitions.reject_requisition', id=req.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-xs btn-danger p-1" title="Reject" style="font-size: 0.85rem; min-width: 28px;"><i class="fas fa-times"></i></button>
+                                    </form>
+                                    {% endif %}
                                 {% endif %}
-                                
-                                {% if current_user.role in ['admin', 'manager'] %}
-                                <form action="{{ url_for('requisitions.approve_requisition', id=req.id) }}" method="POST" style="display: inline;">
-                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                                </form>
-                                <form action="{{ url_for('requisitions.reject_requisition', id=req.id) }}" method="POST" style="display: inline;">
-                                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
-                                </form>
-                                {% endif %}
-                            {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

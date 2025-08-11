@@ -5,9 +5,14 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Coffee Shop Sales</h2>
-    <a href="{{ url_for('coffee.new_sale') }}" class="btn" style="background-color: #7B3F00; color: white;">
-        <i class="fas fa-plus"></i> New Sale
-    </a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('coffee.new_sale') }}" class="btn" style="background-color: #7B3F00; color: white;">
+            <i class="fas fa-plus"></i> New Sale
+        </a>
+        <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Go Back
+        </a>
+    </div>
 </div>
 
 <div class="d-flex gap-2 my-3">
@@ -49,10 +54,10 @@
                         <td>{{ sale.date.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ sale.product.name }}</td>
                         <td>{% if sale.waiter %}{{ sale.waiter.name }}{% else %}N/A{% endif %}</td>
-                        <td>{{ sale.shift.name }}</td>
+                        <td>{% if sale.shift.start_time.hour == 7 and sale.shift.end_time.hour == 17 %}Day Shift{% else %}Night Shift{% endif %}</td>
                         <td>{{ sale.quantity_sold }}</td>
-                        <td>{{ "{:,.0f}".format(sale.unit_price) }} Rwf</td>
-                        <td>{{ "{:,.0f}".format(sale.total_sales) }} Rwf</td>
+                        <td>{{ "{:,.0f}".format(sale.unit_price) }}</td>
+                        <td>{{ "{:,.0f}".format(sale.total_sales) }}</td>
                         <td>
                             <span class="badge 
                                 {% if sale.payment_mode == 'cash' %}bg-success

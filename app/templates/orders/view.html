@@ -58,7 +58,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Order Summary</h5>
-                    <span class="h5 mb-0">Rwf {{ "%.2f"|format(order.total_amount) }}</span>
+                    <span class="h5 mb-0">{{ "%.2f"|format(order.total_amount) }}</span>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0">
@@ -80,8 +80,8 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-right">{{ item.quantity }}</td>
-                                <td class="text-right">Rwf {{ "%.2f"|format(item.unit_price) }}</td>
-                                <td class="text-right">Rwf {{ "%.2f"|format(item.quantity * item.unit_price) }}</td>
+                                <td class="text-right">{{ "%.2f"|format(item.unit_price) }}</td>
+                                <td class="text-right">{{ "%.2f"|format(item.quantity * item.unit_price) }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

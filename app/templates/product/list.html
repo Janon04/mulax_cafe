@@ -5,12 +5,16 @@
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Product List</h5>
-            {# Check if the current user has the 'manager' role to show the 'New Product' button #}
-            {% if current_user.is_manager() %}
-            <a href="{{ url_for('product.new_product') }}" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus me-1"></i> New Product
-            </a>
-            {% endif %}
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Go Back
+                </a>
+                {% if current_user.is_manager() %}
+                <a href="{{ url_for('product.new_product') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i> New Product
+                </a>
+                {% endif %}
+            </div>
         </div>
 
         <div class="export-buttons">
@@ -24,16 +28,16 @@
 </div>
 
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle"> {# Added align-middle for better vertical alignment #}
+            <div class="table-responsive" style="min-width: 1000px;">
+                <table class="table table-hover align-middle" style="width: 100%; table-layout: auto;">
                     <thead class="table-light">
                         <tr>
-                            <th>SKU</th> {# Added SKU column as it's generated #}
-                            <th>Name</th>
-                            <th>Category</th>
-                            <th class="text-center">Stock</th>
-                            <th class="text-end">Price</th>
-                            <th class="text-end">Actions</th>
+                            <th style="min-width: 80px;">SKU</th>
+                            <th style="min-width: 140px;">Name</th>
+                            <th style="min-width: 100px;">Category</th>
+                            <th class="text-center" style="min-width: 110px;">Stock</th>
+                            <th class="text-end" style="min-width: 120px;">Price (Rwf)</th>
+                            <th style="width: 1%; white-space: nowrap; text-align: center;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,48 +58,45 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-end">{{ product.unit_price|format_currency }}</td>
-                                <td class="text-end text-nowrap"> {# Added text-nowrap to keep buttons together #}
-                                    {# Changed URL for "Manage Stock" to view_product where stock movements are shown #}
-                                    <a href="{{ url_for('product.view_product', product_id=product.id) }}"
-                                       class="btn btn-sm btn-outline-secondary me-1"
-                                       data-bs-toggle="tooltip" title="View Details & Manage Stock">
-                                        <i class="fas fa-boxes"></i>
-                                    </a>
-                                    {% if current_user.is_manager() %}
-                                    {# Corrected 'id' to 'product_id' for edit_product URL #}
-                                    <a href="{{ url_for('product.edit_product', product_id=product.id) }}"
-                                       class="btn btn-sm btn-outline-primary me-1"
-                                       data-bs-toggle="tooltip" title="Edit Product">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    {# Added Delete button with a confirmation modal for safety #}
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                            data-bs-toggle="modal" data-bs-target="#deleteProductModal-{{ product.id }}"
-                                            title="Delete Product">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-
-                                    {# Delete Confirmation Modal #}
-                                    <div class="modal fade" id="deleteProductModal-{{ product.id }}" tabindex="-1" aria-labelledby="deleteProductModalLabel-{{ product.id }}" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="deleteProductModalLabel-{{ product.id }}">Confirm Deletion</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    Are you sure you want to delete <strong>{{ product.name }}</strong>? This action cannot be undone.
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <form action="{{ url_for('product.delete_product', product_id=product.id) }}" method="POST" class="d-inline">
-                                                        <button type="submit" class="btn btn-danger">Delete</button>
-                                                    </form>
+                                <td class="text-end text-nowrap" style="text-align: center; white-space: nowrap;">
+                                    <div class="d-flex flex-row gap-1 justify-content-center">
+                                        <a href="{{ url_for('product.view_product', product_id=product.id) }}"
+                                           class="btn btn-xs btn-outline-secondary p-1"
+                                           data-bs-toggle="tooltip" title="View Details & Manage Stock" style="font-size: 0.85rem; min-width: 28px;">
+                                            <i class="fas fa-boxes"></i>
+                                        </a>
+                                        {% if current_user.is_manager() %}
+                                        <a href="{{ url_for('product.edit_product', product_id=product.id) }}"
+                                           class="btn btn-xs btn-outline-primary p-1"
+                                           data-bs-toggle="tooltip" title="Edit Product" style="font-size: 0.85rem; min-width: 28px;">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-xs btn-outline-danger p-1"
+                                                data-bs-toggle="modal" data-bs-target="#deleteProductModal-{{ product.id }}"
+                                                title="Delete Product" style="font-size: 0.85rem; min-width: 28px;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                        <div class="modal fade" id="deleteProductModal-{{ product.id }}" tabindex="-1" aria-labelledby="deleteProductModalLabel-{{ product.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteProductModalLabel-{{ product.id }}">Confirm Deletion</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Are you sure you want to delete <strong>{{ product.name }}</strong>? This action cannot be undone.
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="{{ url_for('product.delete_product', product_id=product.id) }}" method="POST" class="d-inline">
+                                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+                                        {% endif %}
                                     </div>
-                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}

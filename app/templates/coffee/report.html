@@ -41,7 +41,7 @@
                                 <tr>
                                     <td>{{ product.name }}</td>
                                     <td class="text-end">{{ "%.2f"|format(product.total_quantity) }}</td>
-                                    <td class="text-end">{{ "{:,.0f}".format(product.total_sales) }} Rwf</td>
+                                    <td class="text-end">{{ "{:,.0f}".format(product.total_sales) }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -49,7 +49,7 @@
                                 <tr>
                                     <th>Total</th>
                                     <th class="text-end">{{ "%.2f"|format(sales_by_product|sum(attribute='total_quantity')) }}</th>
-                                    <th class="text-end">{{ "{:,.0f}".format(sales_by_product|sum(attribute='total_sales')) }} Rwf</th>
+                                    <th class="text-end">{{ "{:,.0f}".format(sales_by_product|sum(attribute='total_sales')) }}</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -77,14 +77,14 @@
                                 {% for payment in sales_by_payment %}
                                 <tr>
                                     <td>{{ payment.payment_mode }}</td>
-                                    <td class="text-end">{{ "{:,.0f}".format(payment.total_sales) }} Rwf</td>
+                                    <td class="text-end">{{ "{:,.0f}".format(payment.total_sales) }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                             <tfoot class="table-light">
                                 <tr>
                                     <th>Total</th>
-                                    <th class="text-end">{{ "{:,.0f}".format(sales_by_payment|sum(attribute='total_sales')) }} Rwf</th>
+                                    <th class="text-end">{{ "{:,.0f}".format(sales_by_payment|sum(attribute='total_sales')) }}</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -120,10 +120,10 @@
                             <td>{{ sale.date.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>{{ sale.product.name }}</td>
                             <td>{% if sale.waiter %}{{ sale.waiter.name }}{% else %}N/A{% endif %}</td>
-                            <td>{{ sale.shift.name }}</td>
+                            <td>{% if sale.shift.start_time.hour == 7 and sale.shift.end_time.hour == 17 %}Day Shift{% else %}Night Shift{% endif %}</td>
                             <td class="text-end">{{ "%.2f"|format(sale.quantity_sold) }}</td>
-                            <td class="text-end">{{ "{:,.0f}".format(sale.unit_price) }} Rwf</td>
-                            <td class="text-end">{{ "{:,.0f}".format(sale.total_sales) }} Rwf</td>
+                            <td class="text-end">{{ "{:,.0f}".format(sale.unit_price) }}</td>
+                            <td class="text-end">{{ "{:,.0f}".format(sale.total_sales) }}</td>
                             <td>{{ sale.payment_mode }}</td>
                         </tr>
                         {% endfor %}

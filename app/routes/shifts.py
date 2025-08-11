@@ -18,23 +18,35 @@ shifts_bp = Blueprint('shifts', __name__)
 @login_required
 def shift_list():
     shifts = Shift.query.order_by(Shift.start_time).all()
+    # Annotate each shift with a display_name property for day/night
+    for shift in shifts:
+        if shift.start_time == time(7, 0) and shift.end_time == time(17, 0):
+            shift.display_name = 'Day Shift'
+        else:
+            shift.display_name = 'Night Shift'
     return render_template('shifts/list.html', shifts=shifts)
+
 
 @bp.route('/current')
 @login_required
 def current_shift():
     current_shift = get_current_shift()
     if current_shift:
+        # Determine display_name for dashboard
+        if current_shift.start_time == time(7, 0) and current_shift.end_time == time(17, 0):
+            display_name = 'Day Shift'
+        else:
+            display_name = 'Night Shift'
         return jsonify({
             'id': current_shift.id,
-            'name': current_shift.name,
+            'name': display_name,
             'start_time': current_shift.start_time.strftime('%H:%M'),
             'end_time': current_shift.end_time.strftime('%H:%M'),
             'is_active': current_shift.is_active,
             'current_time': datetime.now(pytz.timezone('Africa/Kigali')).strftime('%H:%M'),
             'is_currently_active': current_shift.is_currently_active()
         })
-    return jsonify({'message': 'No active shift found'}), 404
+    return jsonify({'message': 'We have closed!!'}), 404
    
 @bp.route('/create', methods=['GET', 'POST'])
 @login_required

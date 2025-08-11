@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from app.models import Requisition, Product, User
+from app.utils.shift_utils import get_current_shift
 from app.extensions import db
 from config import Config
 from app.services.notifications import EmailNotifier
@@ -18,13 +19,16 @@ def admin_or_manager_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
+from sqlalchemy.orm import joinedload
+
 @bp.route('/')
 @login_required
 def list_requisitions():
     if current_user.role in ['admin', 'manager']:
-        requisitions = Requisition.query.order_by(Requisition.date.desc()).all()
+        requisitions = Requisition.query.options(joinedload(Requisition.requester).joinedload(User.current_shift)).order_by(Requisition.date.desc()).all()
     else:
-        requisitions = Requisition.query.filter_by(user_id=current_user.id).order_by(Requisition.date.desc()).all()
+        requisitions = Requisition.query.options(joinedload(Requisition.requester).joinedload(User.current_shift)).filter_by(user_id=current_user.id).order_by(Requisition.date.desc()).all()
     return render_template('requisitions/list.html', requisitions=requisitions)
 
 @bp.route('/new', methods=['GET', 'POST'])
@@ -36,13 +40,15 @@ def new_requisition():
         
         product = Product.query.get_or_404(product_id)
         
+        current_shift = get_current_shift()
         requisition = Requisition(
             product_id=product.id,
             user_id=current_user.id,
             current_stock=product.current_stock,
             requested_qty=requested_qty,
             unit=product.unit,
-            status='pending'
+            status='pending',
+            shift_id=current_shift.id if current_shift else None
         )
         
         db.session.add(requisition)

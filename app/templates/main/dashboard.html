@@ -23,9 +23,9 @@
                         <span class="input-group-text bg-white border-end-0" style="font-size: 1rem;">
                             <i class="fas fa-calendar-alt"></i>
                         </span>
-                        <input type="date" class="form-control border-start-0" id="dashboard-date-filter" 
-                               value="{{ now.strftime('%Y-%m-%d') if now is defined else '' }}" 
-                               style="font-size: 1rem; max-width: 150px;">
+               <input type="date" class="form-control border-start-0" id="dashboard-date-filter" 
+                   value="{{ selected_date.strftime('%Y-%m-%d') if selected_date is defined else (now.strftime('%Y-%m-%d') if now is defined else '') }}" 
+                   style="font-size: 1rem; max-width: 150px;">
                     </div>
                 </div>
             </div>
@@ -59,7 +59,7 @@
                                 </div>
                             </div>
                             <div class="mt-2 text-xs fw-bold text-primary" style="font-size: 0.75rem;">
-                                Rwf: <span id="today-revenue">
+                                <span id="today-revenue">
                                     {{ "%.2f"|format(today_revenue) if today_revenue is defined else '0.00' }}
                                 </span>
                             </div>
@@ -105,7 +105,6 @@
                             </div>
                             <div class="d-flex align-items-baseline">
                                 <div class="h2 mb-0 fw-bold text-gray-800" style="font-size: 2rem;">
-                                    <span class="text-success" style="font-size: 0.9rem;">Rwf</span> 
                                     <span id="todays-revenue" style="font-size: 1rem;">
                                         {{ '{:,.1f}'.format(todays_revenue) if todays_revenue is defined else '0.0' }}
                                     </span>
@@ -659,7 +658,7 @@
                 })
                 .catch(error => {
                     console.error("Shift indicator update failed:", error);
-                    document.getElementById('current-shift-indicator').textContent = 'Error loading shift';
+                    document.getElementById('current-shift-indicator').textContent = 'We have closed!!';
                     setTimeout(updateCurrentShiftIndicator, 60000);
                 });
         }
@@ -875,10 +874,14 @@
             }, 2000);
         });
 
-        // Date filter change handler
+        // Date filter change handler: reload page with ?date=YYYY-MM-DD
         document.getElementById('dashboard-date-filter').addEventListener('change', function() {
             const date = this.value;
-            showToast('Date filter changed to ' + date, 'info');
+            if (date) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('date', date);
+                window.location.href = url.toString();
+            }
         });
 
         // Product filter change handler

@@ -193,6 +193,7 @@ class StockMovement(db.Model):
         super().__init__(**kwargs)
 
 
+
 class Requisition(db.Model):
     __tablename__ = 'requisitions'
     
@@ -207,11 +208,13 @@ class Requisition(db.Model):
     approved_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     approval_date = db.Column(db.DateTime)
     notes = db.Column(db.String(200))
+    shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'), nullable=True)
     
     # Relationships
     product = db.relationship('Product', back_populates='requisitions')
     requester = db.relationship('User', back_populates='requisitions', foreign_keys=[user_id])
     approver = db.relationship('User', back_populates='approved_requisitions', foreign_keys=[approved_by])
+    shift = db.relationship('Shift')
 
 
 class CoffeeSale(db.Model):

@@ -45,7 +45,11 @@
                     <div class="mb-3">
                         <strong>Current Shift:</strong> 
                         {% if user.current_shift %}
-                            {{ user.current_shift.name }} ({{ user.current_shift.start_time|format_time }} - {{ user.current_shift.end_time|format_time }})
+                            {% if user.current_shift.start_time.hour == 7 and user.current_shift.end_time.hour == 17 %}
+                                Day Shift ({{ user.current_shift.start_time|format_time }} - {{ user.current_shift.end_time|format_time }})
+                            {% else %}
+                                Night Shift ({{ user.current_shift.start_time|format_time }} - {{ user.current_shift.end_time|format_time }})
+                            {% endif %}
                         {% else %}
                             Not assigned
                         {% endif %}
@@ -109,7 +113,7 @@
                                     {% for attendance in attendances %}
                                     <tr>
                                         <td>{{ attendance.date }}</td>
-                                        <td>{{ attendance.shift.name }}</td>
+                                        <td>{% if attendance.shift.start_time.hour == 7 and attendance.shift.end_time.hour == 17 %}Day Shift{% else %}Night Shift{% endif %}</td>
                                         <td>{{ attendance.clock_in_time|format_datetime }}</td>
                                         <td>
                                             {% if attendance.clock_out_time %}
