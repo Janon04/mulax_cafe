@@ -15,6 +15,8 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.services.notifications import check_low_stock_products
 from dotenv import load_dotenv
 from sqlalchemy import text
+from datetime import timedelta
+
 
 # Global app object for some modules (only use after create_app is called)
 app = Flask(__name__)
@@ -169,25 +171,28 @@ def create_default_users(app):
 def create_default_shifts(app):
     from app.models import Shift
     try:
-        if not Shift.query.filter_by(name='Morning').first():
-            morning_shift = Shift(
-                name='Morning',
-                start_time=time(7, 0, 0),
-                end_time=time(17, 0, 0),
-                is_active=True
-            )
-            db.session.add(morning_shift)
-            app.logger.info("Created default Morning shift (7am-5pm)")
+        # Remove any existing shifts first to ensure clean slate
+        Shift.query.delete()
+        
+        # Create Day Shift (7am to 5pm)
+        day_shift = Shift(
+            name='Day Shift',
+            start_time=time(7, 0, 0),
+            end_time=time(17, 0, 0),
+            is_active=True
+        )
+        db.session.add(day_shift)
+        app.logger.info("Created Day Shift (7am-5pm)")
 
-        if not Shift.query.filter_by(name='Evening').first():
-            evening_shift = Shift(
-                name='Evening',
-                start_time=time(17, 0, 0),
-                end_time=time(23, 59, 59),
-                is_active=True
-            )
-            db.session.add(evening_shift)
-            app.logger.info("Created default Evening shift (5pm-midnight)")
+        # Create Night Shift (5pm to 00am next day)
+        night_shift = Shift(
+            name='Night Shift',
+            start_time=time(17, 0, 0),
+            end_time=time(00, 0, 0),
+            is_active=True
+        )
+        db.session.add(night_shift)
+        app.logger.info("Created Night Shift (5pm-00:00am)")
 
         db.session.commit()
     except Exception as e:
@@ -200,28 +205,53 @@ def cleanup_shift_assignments():
     now = datetime.utcnow()
     current_time = now.time()
     try:
-        ended_shifts = Shift.query.filter(
-            Shift.end_time < current_time,
-            Shift.is_active == True
-        ).all()
+        # Handle day shift (7am-5pm)
+        if current_time >= time(17, 0) or current_time < time(7, 0):
+            day_shift = Shift.query.filter_by(name='Day Shift').first()
+            if day_shift:
+                users = User.query.filter_by(current_shift_id=day_shift.id).all()
+                for user in users:
+                    last_attendance = Attendance.query.filter_by(
+                        user_id=user.id,
+                        shift_id=day_shift.id
+                    ).order_by(Attendance.login_time.desc()).first()
 
-        for shift in ended_shifts:
-            users = User.query.filter_by(current_shift_id=shift.id).all()
-            for user in users:
-                last_attendance = Attendance.query.filter_by(
-                    user_id=user.id,
-                    shift_id=shift.id
-                ).order_by(Attendance.login_time.desc()).first()
+                    if last_attendance and not last_attendance.logout_time:
+                        last_attendance.logout_time = datetime.combine(
+                            last_attendance.login_time.date(),
+                            day_shift.end_time
+                        )
+                        current_app.logger.info(f"Set logout time for user {user.username} in Day Shift")
 
-                if last_attendance and not last_attendance.logout_time:
-                    last_attendance.logout_time = datetime.combine(
-                        last_attendance.login_time.date(),
-                        shift.end_time
-                    )
-                    current_app.logger.info(f"Set logout time for user {user.username} in shift {shift.name}")
+                    user.current_shift_id = None
+                    current_app.logger.info(f"Cleared Day Shift assignment for user {user.username}")
 
-                user.current_shift_id = None
-                current_app.logger.info(f"Cleared shift assignment for user {user.username}")
+        # Handle night shift (5pm-7am)
+        if current_time >= time(7, 0) and current_time < time(17, 0):
+            night_shift = Shift.query.filter_by(name='Night Shift').first()
+            if night_shift:
+                users = User.query.filter_by(current_shift_id=night_shift.id).all()
+                for user in users:
+                    last_attendance = Attendance.query.filter_by(
+                        user_id=user.id,
+                        shift_id=night_shift.id
+                    ).order_by(Attendance.login_time.desc()).first()
+
+                    if last_attendance and not last_attendance.logout_time:
+                        # For night shift, the end time is the next day at 7am
+                        logout_date = last_attendance.login_time.date()
+                        if last_attendance.login_time.time() >= time(17, 0):
+                            logout_date += timedelta(days=1)
+                        
+                        last_attendance.logout_time = datetime.combine(
+                            logout_date,
+                            night_shift.end_time
+                        )
+                        current_app.logger.info(f"Set logout time for user {user.username} in Night Shift")
+
+                    user.current_shift_id = None
+                    current_app.logger.info(f"Cleared Night Shift assignment for user {user.username}")
+
         db.session.commit()
     except Exception as e:
         current_app.logger.error(f"Error in shift cleanup: {str(e)}")
@@ -290,7 +320,6 @@ def register_blueprints(app):
     from app.routes.shifts import bp as shift_bp
     from app.routes.waiter import bp as waiters_bp
     
-
     blueprints = [
         (main_bp, None),
         (auth_bp, '/auth'),

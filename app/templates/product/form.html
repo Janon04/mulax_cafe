@@ -23,10 +23,10 @@
                                     <label class="form-label fw-bold">Category <span class="text-danger">*</span></label>
                                     <select class="form-select" name="category" id="categorySelect" required>
                                         <option value="">Select Category</option>
-                                        <option value="food" {% if product and product.category == 'food' %}selected{% endif %}>Food</option>
-                                        <option value="drinks" {% if product and product.category == 'drinks' %}selected{% endif %}>Drinks</option>
-                                        <option value="furniture" {% if product and product.category == 'furniture' %}selected{% endif %}>Furniture</option>
-                                        <option value="materials" {% if product and product.category == 'materials' %}selected{% endif %}>Materials</option>
+                                        <option value="Food" {% if product and product.category == 'Food' %}selected{% endif %}>Food</option>
+                                        <option value="coffee Bar" {% if product and product.category == 'Coffee Bar' %}selected{% endif %}>coffee Bar</option>
+                                        <option value="coffee and Tea" {% if product and product.category == 'Coffee and Tea' %}selected{% endif %}>coffee and Tea</option>
+                                        <option value="Juices" {% if product and product.category == 'Juices' %}selected{% endif %}>Juices</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">

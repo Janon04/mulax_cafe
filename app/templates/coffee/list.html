@@ -3,79 +3,183 @@
 {% block title %}Coffee Shop Sales{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Coffee Shop Sales</h2>
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('coffee.new_sale') }}" class="btn" style="background-color: #7B3F00; color: white;">
-            <i class="fas fa-plus"></i> New Sale
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Coffee Shop Sales</h2>
+            <p class="text-muted small mb-0">Track and manage all sales transactions</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('coffee.new_sale') }}" class="btn" style="background-color: #7B3F00; color: white;">
+                <i class="fas fa-plus me-1"></i> New Sale
+            </a>
+            <a href="{{ url_for('product.list_products') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Products
+            </a>
+        </div>
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="d-flex gap-2 mb-3">
+        <a href="{{ url_for('coffee.export_transactions_excel') }}" class="btn btn-success">
+            <i class="fas fa-file-excel me-1"></i> Export Excel
         </a>
-        <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Go Back
+        <a href="{{ url_for('coffee.export_transactions_pdf') }}" class="btn btn-danger">
+            <i class="fas fa-file-pdf me-1"></i> Export PDF
         </a>
     </div>
-</div>
 
-<div class="d-flex gap-2 my-3">
-    <a href="{{ url_for('coffee.export_transactions_excel') }}" class="btn btn-success">
-        <i class="bi bi-file-earmark-excel"></i> Download Excel
-    </a>
-    <a href="{{ url_for('coffee.export_transactions_pdf') }}" class="btn btn-danger">
-        <i class="bi bi-file-earmark-pdf"></i> Download PDF
-    </a>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header text-white" style="background-color: #7B3F00;">
-        <div class="d-flex justify-content-between align-items-center">
-            <span>Recent Transactions</span>
-            <div class="d-flex gap-2">
-                <a href="{{ url_for('coffee.sales_report') }}" class="btn btn-sm" style="background-color: #FFD700;">
-                    <i class="fas fa-chart-bar"></i> View Report
-                </a>
-                <a href="{{ url_for('coffee.general_report') }}" class="btn btn-sm" style="background-color: #4CAF50; color: white;">
-                    <i class="fas fa-file-alt"></i> General Report
-                </a>
+    <!-- Filter and Search Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body pt-0">
+            <div class="row mb-3 g-2">
+                <div class="col-md-6">
+                    <form method="GET" class="input-group">
+                        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search transactions..." 
+                               value="{{ request.args.get('q', '') }}">
+                        <button class="btn btn-sm btn-outline-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-end gap-2">
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('coffee.list_sales') }}" 
+                                    {% if not request.args.get('category') %}selected{% endif %}>
+                                All Categories
+                            </option>
+                            {% for category in categories %}
+                            <option value="{{ url_for('coffee.list_sales', category=category) }}"
+                                    {% if request.args.get('category') == category %}selected{% endif %}>
+                                {{ category|title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('coffee.list_sales', sort='date_desc') }}"
+                                    {% if request.args.get('sort') == 'date_desc' or not request.args.get('sort') %}selected{% endif %}>
+                                Sort: Newest First
+                            </option>
+                            <option value="{{ url_for('coffee.list_sales', sort='date_asc') }}"
+                                    {% if request.args.get('sort') == 'date_asc' %}selected{% endif %}>
+                                Sort: Oldest First
+                            </option>
+                            <option value="{{ url_for('coffee.list_sales', sort='amount_desc') }}"
+                                    {% if request.args.get('sort') == 'amount_desc' %}selected{% endif %}>
+                                Sort: Highest Amount
+                            </option>
+                            <option value="{{ url_for('coffee.list_sales', sort='amount_asc') }}"
+                                    {% if request.args.get('sort') == 'amount_asc' %}selected{% endif %}>
+                                Sort: Lowest Amount
+                            </option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Product</th>
-                        <th>Waiter</th>
-                        <th>Shift</th>
-                        <th>Qty</th>
-                        <th>Unit Price (Rwf)</th>
-                        <th>Total (Rwf)</th>
-                        <th>Payment</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for sale in sales %}
-                    <tr>
-                        <td>{{ sale.date.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>{{ sale.product.name }}</td>
-                        <td>{% if sale.waiter %}{{ sale.waiter.name }}{% else %}N/A{% endif %}</td>
-                        <td>{% if sale.shift.start_time.hour == 7 and sale.shift.end_time.hour == 17 %}Day Shift{% else %}Night Shift{% endif %}</td>
-                        <td>{{ sale.quantity_sold }}</td>
-                        <td>{{ "{:,.0f}".format(sale.unit_price) }}</td>
-                        <td>{{ "{:,.0f}".format(sale.total_sales) }}</td>
-                        <td>
-                            <span class="badge 
-                                {% if sale.payment_mode == 'cash' %}bg-success
-                                {% elif sale.payment_mode == 'momo' %}bg-primary
-                                {% else %}bg-info{% endif %}">
-                                {{ sale.payment_mode|upper }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+    <!-- Sales Table Card -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #7B3F00;">
+            <span>Recent Transactions</span>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('coffee.sales_report') }}" class="btn btn-sm" style="background-color: #FFD700;">
+                    <i class="fas fa-chart-bar me-1"></i> View Report
+                </a>
+                <a href="{{ url_for('coffee.general_report') }}" class="btn btn-sm" style="background-color: #4CAF50; color: white;">
+                    <i class="fas fa-file-alt me-1"></i> General Report
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <!-- <th>Category</th> -->
+                            <th>Waiter</th>
+                            <th>Shift</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-center">Payment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td>{{ sale.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <a href="{{ url_for('product.view_product', product_id=sale.product.id) }}" class="text-decoration-none">
+                                    {{ sale.product.name }}
+                                </a>
+                            </td>
+                        
+                            <td>{% if sale.waiter %}{{ sale.waiter.name }}{% else %}N/A{% endif %}</td>
+                            <td>
+                                <span class="badge bg-{% if sale.shift.start_time.hour == 7 %}info{% else %}dark{% endif %}-subtle text-{% if sale.shift.start_time.hour == 7 %}info{% else %}dark{% endif %}">
+                                    {% if sale.shift.start_time.hour == 7 and sale.shift.end_time.hour == 17 %}Day{% else %}Night{% endif %} Shift
+                                </span>
+                            </td>
+                            <td class="text-center">{{ sale.quantity_sold }}</td>
+                            <td class="text-end">{{ "{:,.0f}".format(sale.unit_price) }}</td>
+                            <td class="text-end fw-bold">{{ "{:,.0f}".format(sale.total_sales) }}</td>
+                            <td class="text-center">
+                                <span class="badge 
+                                    {% if sale.payment_mode == 'cash' %}bg-success
+                                    {% elif sale.payment_mode == 'momo' %}bg-primary
+                                    {% else %}bg-info{% endif %}">
+                                    {{ sale.payment_mode|upper }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4">
+                                <i class="fas fa-coffee fa-3x text-muted mb-3"></i>
+                                <h5>No sales found</h5>
+                                <p class="text-muted">Record your first sale to get started</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Persist filter parameters in pagination links
+    const paginationLinks = document.querySelectorAll('.pagination a.page-link');
+    paginationLinks.forEach(link => {
+        const url = new URL(link.href);
+        const params = new URLSearchParams(window.location.search);
+        
+        // Preserve all query parameters except page
+        params.forEach((value, key) => {
+            if (key !== 'page' && !url.searchParams.has(key)) {
+                url.searchParams.append(key, value);
+            }
+        });
+        
+        link.href = url.toString();
+    });
+});
+</script>
 {% endblock %}

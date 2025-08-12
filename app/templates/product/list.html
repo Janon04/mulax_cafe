@@ -2,109 +2,181 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Product List</h5>
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0 pb-0">
+            <div>
+                <h5 class="mb-0">Product Inventory</h5>
+                <p class="text-muted small mb-0">Manage your product catalog and stock levels</p>
+            </div>
             <div class="d-flex gap-2">
-                <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-arrow-left"></i> Go Back
-                </a>
+                <div class="btn-group">
+                    <a href="{{ url_for('product.download_product_excel') }}" class="btn btn-sm btn-outline-success">
+                        <i class="fas fa-file-excel"></i>
+                    </a>
+                    <a href="{{ url_for('product.download_product_pdf') }}" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                </div>
                 {% if current_user.is_manager() %}
-                <a href="{{ url_for('product.new_product') }}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus me-1"></i> New Product
+                <a href="{{ url_for('product.new_product') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i> Add Product
                 </a>
                 {% endif %}
+                <a href="{{ url_for('product.archived_products') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-archive"></i> Archived
+                </a>
             </div>
         </div>
 
-        <div class="export-buttons">
-    <a href="{{ url_for('product.download_product_excel') }}" class="btn btn-success">
+        <div class="card-body pt-0">
+            <!-- Search and Filter Bar -->
+            <div class="row mb-3 g-2">
+                <div class="col-md-6">
+                    <form method="GET" class="input-group">
+                        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search products..." 
+                               value="{{ request.args.get('q', '') }}">
+                        <button class="btn btn-sm btn-outline-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-end gap-2">
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('product.list_products', category='all') }}" 
+                                    {% if not request.args.get('category') or request.args.get('category') == 'all' %}selected{% endif %}>
+                                All Categories
+                            </option>
+                            {% for category in categories %}
+                            <option value="{{ url_for('product.list_products', category=category) }}"
+                                    {% if request.args.get('category') == category %}selected{% endif %}>
+                                {{ category|title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('product.list_products', sort_by='name', sort_order='asc') }}"
+                                    {% if request.args.get('sort_by') == 'name' and request.args.get('sort_order') == 'asc' %}selected{% endif %}>
+                                Sort: A-Z
+                            </option>
+                            <option value="{{ url_for('product.list_products', sort_by='name', sort_order='desc') }}"
+                                    {% if request.args.get('sort_by') == 'name' and request.args.get('sort_order') == 'desc' %}selected{% endif %}>
+                                Sort: Z-A
+                            </option>
+                            <option value="{{ url_for('product.list_products', sort_by='current_stock', sort_order='asc') }}"
+                                    {% if request.args.get('sort_by') == 'current_stock' and request.args.get('sort_order') == 'asc' %}selected{% endif %}>
+                                Sort: Low Stock
+                            </option>
+                            <option value="{{ url_for('product.list_products', sort_by='current_stock', sort_order='desc') }}"
+                                    {% if request.args.get('sort_by') == 'current_stock' and request.args.get('sort_order') == 'desc' %}selected{% endif %}>
+                                Sort: High Stock
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
-    <i class="fas fa-file-excel"></i> Export Excel
-</a>
-<a href="{{ url_for('product.download_product_pdf') }}" class="btn btn-danger">
-    <i class="fas fa-file-pdf"></i> Export PDF
-</a>
-</div>
-
-        <div class="card-body">
-            <div class="table-responsive" style="min-width: 1000px;">
-                <table class="table table-hover align-middle" style="width: 100%; table-layout: auto;">
+            <!-- Product Table -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th style="min-width: 80px;">SKU</th>
-                            <th style="min-width: 140px;">Name</th>
-                            <th style="min-width: 100px;">Category</th>
-                            <th class="text-center" style="min-width: 110px;">Stock</th>
-                            <th class="text-end" style="min-width: 120px;">Price (Rwf)</th>
-                            <th style="width: 1%; white-space: nowrap; text-align: center;">Actions</th>
+                            <th>Product</th>
+                            <th class="text-center">Stock</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% if products.items %} {# Check products.items for pagination object #}
+                        {% if products.items %}
                             {% for product in products.items %}
-                            <tr class="{% if product.current_stock < product.min_stock %}table-warning{% endif %}">
-                                <td><small class="text-muted">{{ product.sku }}</small></td> {# Display SKU #}
+                            <tr class="{% if product.current_stock <= product.min_stock %}table-warning{% endif %}">
                                 <td>
-                                    <a href="{{ url_for('product.view_product', product_id=product.id) }}" class="text-decoration-none text-dark fw-bold">
-                                        {{ product.name }}
-                                    </a>
+                                    
+                                        <div>
+                                            <a href="{{ url_for('product.view_product', product_id=product.id) }}" class="text-decoration-none fw-bold">
+                                                {{ product.name }}
+                                            </a>
+                                            <div class="text-muted small">{{ product.sku }}</div>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td><span class="badge bg-info-subtle text-info">{{ product.category|title }}</span></td>
                                 <td class="text-center">
-                                    {{ product.current_stock | int if product.current_stock is not none else 0 }} {{ product.unit }}
-                                    {% if product.current_stock < product.min_stock %}
-                                    <span class="badge bg-danger ms-2" data-bs-toggle="tooltip" title="Below minimum stock level ({{ product.min_stock }} {{ product.unit}})">Low Stock</span>
+                                    <div class="progress" style="height: 6px;">
+                                        {% set progress = (product.current_stock / (product.min_stock * 2)) * 100 %}
+                                        <div class="progress-bar bg-{% if progress < 25 %}danger{% elif progress < 50 %}warning{% else %}success{% endif %}" 
+                                             role="progressbar" style="width: {{ progress }}%" 
+                                             aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <small>
+                                        {{ product.current_stock|int }} {{ product.unit }} 
+                                        <span class="text-muted">/ min {{ product.min_stock|int }}</span>
+                                    </small>
+                                </td>
+                                <td class="text-end fw-bold">{{ product.unit_price|format_currency }}</td>
+                                <td class="text-center">
+                                    {% if product.current_stock <= product.min_stock %}
+                                        <span class="badge bg-danger">Low Stock</span>
+                                    {% else %}
+                                        <span class="badge bg-success">In Stock</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end">{{ product.unit_price|format_currency }}</td>
-                                <td class="text-end text-nowrap" style="text-align: center; white-space: nowrap;">
-                                    <div class="d-flex flex-row gap-1 justify-content-center">
-                                        <a href="{{ url_for('product.view_product', product_id=product.id) }}"
-                                           class="btn btn-xs btn-outline-secondary p-1"
-                                           data-bs-toggle="tooltip" title="View Details & Manage Stock" style="font-size: 0.85rem; min-width: 28px;">
-                                            <i class="fas fa-boxes"></i>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('product.view_product', product_id=product.id) }}" 
+                                           class="btn btn-outline-secondary" title="View">
+                                            <i class="fas fa-eye"></i>
                                         </a>
                                         {% if current_user.is_manager() %}
-                                        <a href="{{ url_for('product.edit_product', product_id=product.id) }}"
-                                           class="btn btn-xs btn-outline-primary p-1"
-                                           data-bs-toggle="tooltip" title="Edit Product" style="font-size: 0.85rem; min-width: 28px;">
+                                        <a href="{{ url_for('product.edit_product', product_id=product.id) }}" 
+                                           class="btn btn-outline-primary" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button type="button" class="btn btn-xs btn-outline-danger p-1"
-                                                data-bs-toggle="modal" data-bs-target="#deleteProductModal-{{ product.id }}"
-                                                title="Delete Product" style="font-size: 0.85rem; min-width: 28px;">
-                                            <i class="fas fa-trash-alt"></i>
+                                        <button class="btn btn-outline-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteModal{{ product.id }}"
+                                                title="Archive">
+                                            <i class="fas fa-archive"></i>
                                         </button>
-                                        <div class="modal fade" id="deleteProductModal-{{ product.id }}" tabindex="-1" aria-labelledby="deleteProductModalLabel-{{ product.id }}" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="deleteProductModalLabel-{{ product.id }}">Confirm Deletion</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        Are you sure you want to delete <strong>{{ product.name }}</strong>? This action cannot be undone.
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="{{ url_for('product.delete_product', product_id=product.id) }}" method="POST" class="d-inline">
-                                                            <button type="submit" class="btn btn-danger">Delete</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                         {% endif %}
                                     </div>
                                 </td>
                             </tr>
+
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteModal{{ product.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Confirm Archive</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Are you sure you want to archive <strong>{{ product.name }}</strong>?</p>
+                                            <p class="small text-muted">Archived products can be restored later from the Archived Products page.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form action="{{ url_for('product.delete_product', product_id=product.id) }}" method="POST">
+                                                <button type="submit" class="btn btn-danger">Archive Product</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
-                                    <i class="fas fa-box-open fa-2x mb-3"></i><br>
-                                    No products found. Add a new product to get started!
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="py-5">
+                                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                                        <h5>No products found</h5>
+                                        <p class="text-muted">Add your first product to get started</p>
+                                        <a href="{{ url_for('product.new_product') }}" class="btn btn-primary mt-2">
+                                            <i class="fas fa-plus me-1"></i> Add Product
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         {% endif %}
@@ -112,56 +184,64 @@
                 </table>
             </div>
 
-            {# Pagination Controls #}
-            <nav aria-label="Product list navigation">
+            <!-- Pagination -->
+            {% if products.pages > 1 %}
+            <nav aria-label="Page navigation">
                 <ul class="pagination justify-content-center mt-4">
                     <li class="page-item {% if not products.has_prev %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('product.list_products', page=products.prev_num) }}" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
+                        <a class="page-link" href="{{ url_for('product.list_products', page=products.prev_num, **request.args) }}">
+                            <i class="fas fa-chevron-left"></i>
                         </a>
                     </li>
-                    {% for p in products.iter_pages() %}
+                    {% for p in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=3) %}
                         {% if p %}
                             <li class="page-item {% if p == products.page %}active{% endif %}">
-                                <a class="page-link" href="{{ url_for('product.list_products', page=p) }}">{{ p }}</a>
+                                <a class="page-link" href="{{ url_for('product.list_products', page=p, **request.args) }}">{{ p }}</a>
                             </li>
                         {% else %}
-                            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
                         {% endif %}
                     {% endfor %}
                     <li class="page-item {% if not products.has_next %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('product.list_products', page=products.next_num) }}" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
+                        <a class="page-link" href="{{ url_for('product.list_products', page=products.next_num, **request.args) }}">
+                            <i class="fas fa-chevron-right"></i>
                         </a>
                     </li>
                 </ul>
             </nav>
+            {% endif %}
         </div>
     </div>
 
-    {# Low Stock Alert Section #}
-    {% if low_stock_products %} {# This variable needs to be passed from your Flask route #}
-    <div class="alert alert-warning mt-4 shadow-sm" role="alert">
-        <div class="d-flex align-items-start">
-            <i class="fas fa-exclamation-triangle fa-2x me-3 text-warning"></i>
-            <div>
-                <h5 class="alert-heading mb-1">Low Stock Alert!</h5>
-                <p class="mb-2">The following products are running low and need to be reordered:</p>
-                <ul class="list-unstyled mb-0">
-                    {% for product in low_stock_products %}
-                    <li>
-                        <i class="fas fa-dot-circle fa-xs me-2 text-warning"></i>
-                        <strong><a href="{{ url_for('product.view_product', product_id=product.id) }}" class="alert-link">{{ product.name }}</a></strong> -
-                        Currently: <span class="fw-bold">{{ product.current_stock | int if product.current_stock is not none else 0 }} {{ product.unit }}</span>
-                        (Min. Stock: {{ product.min_stock | int if product.min_stock is not none else 0 }} {{ product.unit }})
-                    </li>
-                    {% endfor %}
-                </ul>
-                <hr>
-                <p class="mb-0 text-end">
-                    <a href="{{ url_for('product.list_products') }}" class="btn btn-sm btn-warning">View All Low Stock Items</a>
-                </p>
+    <!-- Low Stock Alert -->
+    {% if low_stock_products %}
+    <div class="alert alert-warning alert-dismissible fade show mt-4 shadow-sm" role="alert">
+        <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
             </div>
+            <div class="flex-grow-1">
+                <h5 class="alert-heading mb-2">Low Stock Alert</h5>
+                <div class="row row-cols-1 row-cols-md-3 g-3">
+                    {% for product in low_stock_products %}
+                    <div class="col">
+                        <div class="card border-warning h-100">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="card-title mb-1">{{ product.name }}</h6>
+                                    <span class="badge bg-warning text-dark">{{ product.current_stock|int }} {{ product.unit }}</span>
+                                </div>
+                                <p class="card-text small text-muted mb-1">Min: {{ product.min_stock|int }} {{ product.unit }}</p>
+                                <a href="{{ url_for('product.view_product', product_id=product.id) }}" class="btn btn-sm btn-outline-warning">
+                                    Manage Stock
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     </div>
     {% endif %}
@@ -171,10 +251,28 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    // Initialize Bootstrap Tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl)
     })
+    
+    // Persist filter parameters in pagination links
+    const paginationLinks = document.querySelectorAll('.pagination a.page-link');
+    paginationLinks.forEach(link => {
+        const url = new URL(link.href);
+        const params = new URLSearchParams(window.location.search);
+        
+        // Preserve all query parameters except page
+        params.forEach((value, key) => {
+            if (key !== 'page' && !url.searchParams.has(key)) {
+                url.searchParams.append(key, value);
+            }
+        });
+        
+        link.href = url.toString();
+    });
+});
 </script>
 {% endblock %}

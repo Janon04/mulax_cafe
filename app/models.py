@@ -128,21 +128,45 @@ class Product(db.Model):
     remarks = db.Column(db.String(200))
     tax_rate = db.Column(db.Float, nullable=True)
     reorder_qty = db.Column(db.Float, default=0)
-    last_updated = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')), onupdate=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
+    last_updated = db.Column(db.DateTime, 
+                           default=lambda: datetime.now(pytz.timezone('Africa/Kigali')), 
+                           onupdate=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
     min_stock = db.Column(db.Float, default=5.0)
     
-    # Relationships
+    # Soft delete fields
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    deleted_at = db.Column(db.DateTime)
+    
+    # Relationships with modified queries to handle soft deletes
     stock_movements = db.relationship(
         'StockMovement', 
-        back_populates='product', 
-        cascade='all, delete-orphan'
+        back_populates='product',
+        primaryjoin="and_(Product.id==StockMovement.product_id, Product.is_active==True)"
     )
-    requisitions = db.relationship('Requisition', back_populates='product')
-    coffee_sales = db.relationship('CoffeeSale', back_populates='product')
-    order_items = db.relationship('OrderItem', back_populates='product')
+    
+    requisitions = db.relationship(
+        'Requisition',
+        back_populates='product',
+        primaryjoin="and_(Product.id==Requisition.product_id, Product.is_active==True)"
+    )
+    
+    coffee_sales = db.relationship(
+        'CoffeeSale',
+        back_populates='product',
+        primaryjoin="and_(Product.id==CoffeeSale.product_id, Product.is_active==True)"
+    )
+    
+    order_items = db.relationship(
+        'OrderItem',
+        back_populates='product',
+        primaryjoin="and_(Product.id==OrderItem.product_id, Product.is_active==True)"
+    )
 
     def update_stock(self, quantity, movement_type, user_id, notes=None):
         """Helper method to safely update stock"""
+        if not self.is_active:
+            raise ValueError("Cannot update stock for inactive product")
+            
         try:
             movement = StockMovement(
                 product=self,
@@ -162,6 +186,31 @@ class Product(db.Model):
         except Exception as e:
             db.session.rollback()
             return False
+
+    def soft_delete(self):
+        """Mark product as inactive"""
+        self.is_active = False
+        self.deleted_at = datetime.now(pytz.timezone('Africa/Kigali'))
+        db.session.commit()
+
+    def restore(self):
+        """Reactivate a soft-deleted product"""
+        self.is_active = True
+        self.deleted_at = None
+        db.session.commit()
+
+    @classmethod
+    def get_active(cls):
+        """Query only active products"""
+        return cls.query.filter_by(is_active=True)
+
+    @classmethod
+    def get_inactive(cls):
+        """Query only inactive products"""
+        return cls.query.filter_by(is_active=False)
+
+    def __repr__(self):
+        return f'<Product {self.sku} - {self.name} ({"Active" if self.is_active else "Inactive"})>'
 
 
 class StockMovement(db.Model):

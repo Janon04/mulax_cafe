@@ -3,86 +3,221 @@
 {% block title %}Requisitions{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{% if current_user.role in ['admin', 'manager'] %}All{% else %}My{% endif %} Requisitions</h2>
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('requisitions.new_requisition') }}" class="btn" style="background-color: #7B3F00; color: white;">
-            <i class="fas fa-plus"></i> New Requisition
-        </a>
-        <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{% if current_user.role in ['admin', 'manager'] %}All{% else %}My{% endif %} Requisitions</h2>
+            <p class="text-muted small mb-0">Track and manage product requisitions</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('requisitions.new_requisition') }}" class="btn" style="background-color: #7B3F00; color: white;">
+                <i class="fas fa-plus me-1"></i> New Requisition
+            </a>
+            <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Go Back
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="card">
-    <div class="card-header text-white" style="background-color: #7B3F00;">
-        Requisition History
+    <!-- Filter and Search Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body pt-0">
+            <div class="row mb-3 g-2">
+                <div class="col-md-6">
+                    <form method="GET" class="input-group">
+                        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search requisitions..." 
+                               value="{{ request.args.get('q', '') }}">
+                        <button class="btn btn-sm btn-outline-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-end gap-2">
+                        {% if current_user.role in ['admin', 'manager'] %}
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('requisitions.list_requisitions') }}" 
+                                    {% if not request.args.get('user') %}selected{% endif %}>
+                                All Users
+                            </option>
+                            {% for user in all_users %}
+                            <option value="{{ url_for('requisitions.list_requisitions', user=user.id) }}"
+                                    {% if request.args.get('user')|int == user.id %}selected{% endif %}>
+                                {{ user.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('requisitions.list_requisitions', status='all') }}" 
+                                    {% if not request.args.get('status') or request.args.get('status') == 'all' %}selected{% endif %}>
+                                All Statuses
+                            </option>
+                            <option value="{{ url_for('requisitions.list_requisitions', status='pending') }}"
+                                    {% if request.args.get('status') == 'pending' %}selected{% endif %}>
+                                Pending
+                            </option>
+                            <option value="{{ url_for('requisitions.list_requisitions', status='approved') }}"
+                                    {% if request.args.get('status') == 'approved' %}selected{% endif %}>
+                                Approved
+                            </option>
+                            <option value="{{ url_for('requisitions.list_requisitions', status='rejected') }}"
+                                    {% if request.args.get('status') == 'rejected' %}selected{% endif %}>
+                                Rejected
+                            </option>
+                        </select>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('requisitions.list_requisitions', sort='date_desc') }}"
+                                    {% if request.args.get('sort') == 'date_desc' or not request.args.get('sort') %}selected{% endif %}>
+                                Sort: Newest First
+                            </option>
+                            <option value="{{ url_for('requisitions.list_requisitions', sort='date_asc') }}"
+                                    {% if request.args.get('sort') == 'date_asc' %}selected{% endif %}>
+                                Sort: Oldest First
+                            </option>
+                            <option value="{{ url_for('requisitions.list_requisitions', sort='qty_desc') }}"
+                                    {% if request.args.get('sort') == 'qty_desc' %}selected{% endif %}>
+                                Sort: Highest Qty
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive" style="min-width: 1000px;">
-            <table class="table table-hover align-middle" style="width: 100%; table-layout: auto;">
-                <thead>
-                    <tr>
-                        <th style="white-space: nowrap;">Date</th>
-                        <th style="min-width: 140px;">Product</th>
-                        <th style="min-width: 110px;">Requested</th>
-                        <th style="min-width: 120px;">Current Stock</th>
-                        <th style="min-width: 90px;">Shift</th>
-                        <th style="min-width: 90px;">Status</th>
-                        <th style="width: 1%; white-space: nowrap; text-align: center;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for req in requisitions %}
-                    <tr>
-                        <td style="white-space: nowrap;">{{ req.date.strftime('%Y-%m-%d') }}</td>
-                        <td style="max-width: 200px; overflow-wrap: anywhere;">{{ req.product.name }}</td>
-                        <td style="white-space: nowrap;">{{ req.requested_qty }} {{ req.unit }}</td>
-                        <td style="white-space: nowrap;">{{ req.current_stock }} {{ req.unit }}</td>
-                        <td style="white-space: nowrap;">
-                            {% if req.shift %}
-                                {% if req.shift.start_time.hour == 7 and req.shift.end_time.hour == 17 %}
-                                    Day Shift
-                                {% else %}
-                                    Night Shift
-                                {% endif %}
-                            {% else %}
-                                -
+
+    <!-- Requisitions Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #7B3F00;">
+            <div>
+                <i class="fas fa-clipboard-list me-2"></i>
+                <span>Requisition History</span>
+            </div>
+            <div class="badge bg-white text-dark">
+                {{ requisitions|length }} records
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            {% if current_user.role in ['admin', 'manager'] %}
+                            <th>Requester</th>
                             {% endif %}
-                        </td>
-                        <td style="white-space: nowrap;">
-                            <span class="badge 
-                                {% if req.status == 'approved' %}bg-success
-                                {% elif req.status == 'rejected' %}bg-danger
-                                {% else %}bg-warning{% endif %}">
-                                {{ req.status|title }}
-                            </span>
-                        </td>
-                        <td style="text-align: center; white-space: nowrap;">
-                            <div class="d-flex flex-row gap-1 justify-content-center">
-                                {% if req.status == 'pending' %}
-                                    {% if req.user_id == current_user.id %}
-                                    <a href="{{ url_for('requisitions.edit_requisition', id=req.id) }}" class="btn btn-xs btn-outline-secondary p-1" title="Edit" style="font-size: 0.85rem; min-width: 28px;">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    {% endif %}
-                                    {% if current_user.role in ['admin', 'manager'] %}
-                                    <form action="{{ url_for('requisitions.approve_requisition', id=req.id) }}" method="POST" style="display: inline;">
-                                        <button type="submit" class="btn btn-xs btn-success p-1" title="Approve" style="font-size: 0.85rem; min-width: 28px;"><i class="fas fa-check"></i></button>
-                                    </form>
-                                    <form action="{{ url_for('requisitions.reject_requisition', id=req.id) }}" method="POST" style="display: inline;">
-                                        <button type="submit" class="btn btn-xs btn-danger p-1" title="Reject" style="font-size: 0.85rem; min-width: 28px;"><i class="fas fa-times"></i></button>
-                                    </form>
-                                    {% endif %}
+                            <th>Product</th>
+                            <th class="text-center">Requested</th>
+                            <th class="text-center">Current Stock</th>
+                            <th>Shift</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requisitions %}
+                        <tr>
+                            <td style="white-space: nowrap;">{{ req.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            {% if current_user.role in ['admin', 'manager'] %}
+                            <td>{{ req.requester.username }}</td>
+                            {% endif %}
+                            <td style="max-width: 200px; overflow-wrap: anywhere;">{{ req.product.name }}</td>
+                            <td class="text-center">{{ req.requested_qty }} {{ req.unit }}</td>
+                            <td class="text-center">{{ req.current_stock }} {{ req.unit }}</td>
+                            <td>
+                                {% if req.shift %}
+                                    <span class="badge bg-{% if req.shift.start_time.hour == 7 %}info{% else %}dark{% endif %}-subtle text-{% if req.shift.start_time.hour == 7 %}info{% else %}dark{% endif %}">
+                                        {% if req.shift.start_time.hour == 7 and req.shift.end_time.hour == 17 %}
+                                            Day Shift
+                                        {% else %}
+                                            Night Shift
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    -
                                 {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if req.status == 'approved' %}bg-success
+                                    {% elif req.status == 'rejected' %}bg-danger
+                                    {% else %}bg-warning text-dark{% endif %}">
+                                    {{ req.status|title }}
+                                </span>
+                                {% if req.status != 'pending' and req.approved_by %}
+                                    <small class="text-muted d-block">by {{ req.approver.username }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    {% if req.status == 'pending' %}
+                                        {% if req.user_id == current_user.id %}
+                                        <a href="{{ url_for('requisitions.edit_requisition', id=req.id) }}" 
+                                           class="btn btn-outline-primary" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if current_user.role in ['admin', 'manager'] %}
+                                        <form action="{{ url_for('requisitions.approve_requisition', id=req.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-success" title="Approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        <form action="{{ url_for('requisitions.reject_requisition', id=req.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-danger" title="Reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="{% if current_user.role in ['admin', 'manager'] %}8{% else %}7{% endif %}" class="text-center py-4">
+                                <i class="fas fa-clipboard fa-3x text-muted mb-3"></i>
+                                <h5>No requisitions found</h5>
+                                <p class="text-muted">Try adjusting your filters or create a new requisition</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Persist filter parameters
+    const filterSelects = document.querySelectorAll('select.form-select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const url = new URL(this.value);
+            const params = new URLSearchParams(window.location.search);
+            
+            // Preserve other filter parameters
+            params.forEach((value, key) => {
+                if (!['user', 'status', 'sort'].includes(key) && !url.searchParams.has(key)) {
+                    url.searchParams.append(key, value);
+                }
+            });
+            
+            window.location.href = url.toString();
+        });
+    });
+});
+</script>
 {% endblock %}

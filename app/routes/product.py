@@ -7,31 +7,84 @@ from openpyxl import Workbook
 from flask import send_file
 from io import BytesIO
 from xhtml2pdf import pisa
+import pytz
+
 from flask import make_response, render_template_string
 from app.services.notifications import EmailNotifier, check_low_stock_products
+from app.models import CoffeeSale, OrderItem, Requisition
 
 bp = Blueprint('product', __name__, url_prefix='/products')
 
 @bp.route('/')
 @login_required
 def list_products():
-    """List all products with pagination and low stock alerts."""
-    # Check for low stock products and send notifications
-    notified_count = check_low_stock_products()
-    if notified_count > 0:
-        flash(f'Low stock alerts sent for {notified_count} products', 'warning')
+    """List all active products with pagination, filtering, and low stock alerts."""
+    try:
+        # Check for low stock products and send notifications
+        notified_count = check_low_stock_products()
+        if notified_count > 0:
+            flash(f'Low stock alerts sent for {notified_count} product(s)', 'warning')
 
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    products = Product.query.order_by(Product.name).paginate(page=page, per_page=per_page)
+        # Get pagination parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        # Get filter parameters
+        category = request.args.get('category')
+        search_query = request.args.get('q')
+        sort_by = request.args.get('sort_by', 'name')  # Default sort by name
+        sort_order = request.args.get('sort_order', 'asc')  # Default ascending
 
-    # Fetch low stock products separately for the alert section
-    low_stock_products = Product.query.filter(
-        Product.current_stock <= Product.min_stock
-    ).order_by(Product.name).all()
+        # Base query - only active products
+        query = Product.query.filter_by(is_active=True)
 
-    return render_template('product/list.html', products=products, low_stock_products=low_stock_products)
+        # Apply filters
+        if category and category != 'all':
+            query = query.filter_by(category=category)
+            
+        if search_query:
+            query = query.filter(
+                db.or_(
+                    Product.name.ilike(f'%{search_query}%'),
+                    Product.sku.ilike(f'%{search_query}%'),
+                    Product.description.ilike(f'%{search_query}%')
+                )
+            )
 
+        # Apply sorting
+        sort_field = getattr(Product, sort_by, Product.name)
+        if sort_order == 'desc':
+            sort_field = sort_field.desc()
+        query = query.order_by(sort_field)
+
+        # Paginate results
+        products = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+
+        # Get low stock products (active only)
+        low_stock_products = query.filter(
+            Product.current_stock <= Product.min_stock
+        ).order_by(Product.name).all()
+
+        # Get available categories for filter dropdown
+        categories = db.session.query(Product.category.distinct()).filter_by(is_active=True).order_by(Product.category).all()
+        categories = [c[0] for c in categories]
+
+        return render_template(
+            'product/list.html',
+            products=products,
+            low_stock_products=low_stock_products,
+            categories=categories,
+            current_category=category,
+            search_query=search_query,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"Error listing products: {str(e)}")
+        flash('An error occurred while loading products', 'danger')
+        return redirect(url_for('main.index'))
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_product():
@@ -41,10 +94,10 @@ def new_product():
             # Generate product code
             category = request.form['category']
             prefix = {
-                'food': 'FOD', 
-                'drinks': 'DRK', 
-                'furniture': 'FUR', 
-                'materials': 'MAT'
+                'Food': 'FOD', 
+                'Coffee Bar': 'COB', 
+                'Coffee and Tea': 'COT', 
+                'Juices': 'JUC'
             }.get(category, 'PRD')
             
             sku = f"{prefix}-{datetime.now().strftime('%Y%m%d')}-{Product.query.count() + 1:04d}"
@@ -185,37 +238,41 @@ def edit_product(product_id):
 @bp.route('/<int:product_id>/delete', methods=['POST'])
 @login_required
 def delete_product(product_id):
-    """Delete a product (POST method only for safety)"""
+    """Soft delete a product by marking it as inactive"""
     product = Product.query.get_or_404(product_id)
+    
     try:
-        # First delete all stock movements to maintain referential integrity
-        StockMovement.query.filter_by(product_id=product_id).delete()
-        db.session.delete(product)
+        # Instead of deleting, mark as inactive
+        product.is_active = False
+        product.deleted_at = datetime.now(pytz.timezone('Africa/Kigali'))
+        
         db.session.commit()
         
-        # Notify admin about product deletion
+        # Notify admin about product deletion via email
         try:
             notifier = EmailNotifier()
-            message = (
-                f"🗑️ Product Deleted\n\n"
-                f"Name: {product.name}\n"
-                f"SKU: {product.sku}\n"
-                f"Deleted by: {current_user.username}\n"
-                f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+            subject = f"Product Archived: {product.name}"
+            html_message = render_template(
+                'emails/product_archived.html',
+                product=product,
+                user=current_user,
+                archive_time=datetime.now(pytz.timezone('Africa/Kigali')).strftime('%Y-%m-%d %H:%M')
             )
-            notifier.send_whatsapp_message(
-                current_app.config['ADMIN_WHATSAPP_NUMBER'],
-                message
+            
+            notifier.send_email(
+                to=current_app.config['ADMIN_EMAIL'],
+                subject=subject,
+                html_body=html_message
             )
+            
         except Exception as e:
-            current_app.logger.error(f"Failed to send deletion notification: {str(e)}")
+            current_app.logger.error(f"Failed to send archive notification email: {str(e)}")
         
-        flash('Product deleted successfully', 'success')
+        flash('Product archived successfully', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error deleting product: {str(e)}', 'danger')
+        flash(f'Error archiving product: {str(e)}', 'danger')
     return redirect(url_for('product.list_products'))
-    
 
 @bp.route('/<int:product_id>/add_stock', methods=['GET', 'POST'])
 @login_required
@@ -254,6 +311,39 @@ def add_stock(product_id):
         flash(f'Error adding stock: {str(e)}', 'danger')
     
     return redirect(url_for('product.view_product', product_id=product_id))
+
+@bp.route('/<int:product_id>/restore', methods=['POST'])
+@login_required
+def restore_product(product_id):
+    """Restore a soft-deleted product"""
+    product = Product.query.get_or_404(product_id)
+    
+    if product.is_active:
+        flash('Product is already active', 'warning')
+        return redirect(url_for('product.list_products'))
+    
+    try:
+        product.is_active = True
+        product.deleted_at = None
+        db.session.commit()
+        flash('Product restored successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error restoring product: {str(e)}', 'danger')
+    return redirect(url_for('product.list_products'))
+
+@bp.route('/archived')
+@login_required
+def archived_products():
+    """View archived (soft-deleted) products"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    archived = Product.query.filter_by(is_active=False)\
+                   .order_by(Product.deleted_at.desc())\
+                   .paginate(page=page, per_page=per_page)
+    
+    return render_template('product/archived.html', products=archived)
 
 @bp.route('/download/excel', methods=['GET'])
 @login_required

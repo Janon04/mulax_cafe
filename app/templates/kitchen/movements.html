@@ -3,29 +3,94 @@
 {% block title %}Kitchen Stock Movements{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
+    <!-- Header Section -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Kitchen Stock Movements</h2>
-        <a href="{{ url_for('kitchen.inventory') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Inventory
-        </a>
+        <div>
+            <h2>Kitchen Stock Movements</h2>
+            <p class="text-muted small mb-0">Track all inventory changes and usage</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('kitchen.record_usage') }}" class="btn" style="background-color: #7B3F00; color: white;">
+                <i class="fas fa-utensils me-1"></i> Record Usage
+            </a>
+            <a href="{{ url_for('kitchen.inventory') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Inventory
+            </a>
+        </div>
     </div>
-    <div class="card">
-        <div class="card-header bg-light-accent">
-            <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Recent Stock Movements</h5>
+
+    <!-- Filter and Search Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body pt-0">
+            <div class="row mb-3 g-2">
+                <div class="col-md-6">
+                    <form method="GET" class="input-group">
+                        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search movements..." 
+                               value="{{ request.args.get('q', '') }}">
+                        <button class="btn btn-sm btn-outline-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-end gap-2">
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('kitchen.stock_movements') }}" 
+                                    {% if not request.args.get('type') %}selected{% endif %}>
+                                All Types
+                            </option>
+                            <option value="{{ url_for('kitchen.stock_movements', type='usage') }}"
+                                    {% if request.args.get('type') == 'usage' %}selected{% endif %}>
+                                Usage Only
+                            </option>
+                            <option value="{{ url_for('kitchen.stock_movements', type='purchase') }}"
+                                    {% if request.args.get('type') == 'purchase' %}selected{% endif %}>
+                                Purchases Only
+                            </option>
+                        </select>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('kitchen.stock_movements', sort='date_desc') }}"
+                                    {% if request.args.get('sort') == 'date_desc' or not request.args.get('sort') %}selected{% endif %}>
+                                Sort: Newest First
+                            </option>
+                            <option value="{{ url_for('kitchen.stock_movements', sort='date_asc') }}"
+                                    {% if request.args.get('sort') == 'date_asc' %}selected{% endif %}>
+                                Sort: Oldest First
+                            </option>
+                            <option value="{{ url_for('kitchen.stock_movements', sort='quantity_desc') }}"
+                                    {% if request.args.get('sort') == 'quantity_desc' %}selected{% endif %}>
+                                Sort: Highest Qty
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movements Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #7B3F00;">
+            <div>
+                <i class="fas fa-exchange-alt me-2"></i>
+                <span>Stock Movement History</span>
+            </div>
+            <div class="badge bg-white text-dark">
+                {{ movements|length }} records
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
                             <th>Date</th>
                             <th>Product</th>
                             <th>Type</th>
-                            <th>Quantity</th>
+                            <th class="text-center">Quantity</th>
                             <th>User</th>
-                            <th>Waiter</th>
-                            <th>Remaining Stock</th>
+                            <th>Remaining</th>
                             <th>Notes</th>
                         </tr>
                     </thead>
@@ -33,17 +98,40 @@
                         {% for movement in movements %}
                         <tr>
                             <td>{{ movement.date.strftime('%Y-%m-%d %H:%M') }}</td>
-                            <td>{{ movement.product.name if movement.product else 'N/A' }}</td>
-                            <td>{{ movement.movement_type|capitalize }}</td>
-                            <td>{{ movement.stock_in - movement.stock_out }}</td>
-                            <td>{{ movement.user.username if movement.user else 'N/A' }}</td>
-                            <td>{% if movement.waiter %}{{ movement.waiter.name }}{% else %}N/A{% endif %}</td>
+                            <td>
+                                <a href="{{ url_for('product.view_product', product_id=movement.product.id) if movement.product else '#' }}" 
+                                   class="text-decoration-none">
+                                    {{ movement.product.name if movement.product else 'N/A' }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if movement.movement_type == 'usage' %}bg-danger
+                                    {% elif movement.movement_type == 'purchase' %}bg-success
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ movement.movement_type|capitalize }}
+                                </span>
+                            </td>
+                            <td class="text-center {% if movement.stock_in > 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if movement.stock_in > 0 %}
+                                    +{{ movement.stock_in }}
+                                {% else %}
+                                    -{{ movement.stock_out }}
+                                {% endif %}
+                            </td>
+                            <td>{{ movement.user.username if movement.user else 'System' }}</td>
                             <td>{{ movement.closing_stock }}</td>
-                            <td>{{ movement.notes or '' }}</td>
+                            <td class="text-truncate" style="max-width: 200px;" title="{{ movement.notes or '' }}">
+                                {{ movement.notes or '' }}
+                            </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted">No stock movements found.</td>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                                <h5>No stock movements found</h5>
+                                <p class="text-muted">Try adjusting your filters or record new movements</p>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -52,4 +140,35 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Persist filter parameters
+    const filterSelects = document.querySelectorAll('select.form-select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const url = new URL(this.value);
+            const params = new URLSearchParams(window.location.search);
+            
+            // Preserve other filter parameters
+            params.forEach((value, key) => {
+                if (key !== 'type' && key !== 'sort' && !url.searchParams.has(key)) {
+                    url.searchParams.append(key, value);
+                }
+            });
+            
+            window.location.href = url.toString();
+        });
+    });
+});
+</script>
 {% endblock %}

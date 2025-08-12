@@ -24,9 +24,42 @@ bp = Blueprint('coffee', __name__)
 @bp.route('/')
 @login_required
 def list_sales():
-    sales = CoffeeSale.query.order_by(CoffeeSale.date.desc()).all()
-    return render_template('coffee/list.html', sales=sales)
-
+    # Get filter parameters
+    search_query = request.args.get('q', '')
+    category = request.args.get('category')
+    sort = request.args.get('sort', 'date_desc')
+    
+    # Base query
+    query = CoffeeSale.query.join(Product)
+    
+    # Apply filters
+    if search_query:
+        query = query.filter(
+            db.or_(
+                Product.name.ilike(f'%{search_query}%'),
+                Product.description.ilike(f'%{search_query}%')
+            )
+        )
+    
+    if category:
+        query = query.filter(Product.category == category)
+    
+    # Apply sorting
+    if sort == 'date_asc':
+        query = query.order_by(CoffeeSale.date.asc())
+    elif sort == 'amount_desc':
+        query = query.order_by(CoffeeSale.total_sales.desc())
+    elif sort == 'amount_asc':
+        query = query.order_by(CoffeeSale.total_sales.asc())
+    else:  # Default: date_desc
+        query = query.order_by(CoffeeSale.date.desc())
+    
+    # Get unique categories for filter dropdown
+    categories = db.session.query(Product.category.distinct()).order_by(Product.category).all()
+    categories = [c[0] for c in categories]
+    
+    sales = query.all()
+    return render_template('coffee/list.html', sales=sales, categories=categories)
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_sale():
@@ -130,9 +163,24 @@ def sales_report():
 @bp.route('/general_report')
 @login_required
 def general_report():
-    # Get all coffee sales and orders
-    coffee_sales = CoffeeSale.query.order_by(CoffeeSale.date.desc()).all()
-    orders = Order.query.order_by(Order.date.desc()).all()
+    # Date filter from query param
+    selected_date_str = request.args.get('date')
+    selected_date = None
+    if selected_date_str:
+        try:
+            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = None
+
+    # Filter by date if provided
+    if selected_date:
+        start = datetime.combine(selected_date, datetime.min.time())
+        end = datetime.combine(selected_date, datetime.max.time())
+        coffee_sales = CoffeeSale.query.filter(CoffeeSale.date >= start, CoffeeSale.date <= end).order_by(CoffeeSale.date.desc()).all()
+        orders = Order.query.filter(Order.date >= start, Order.date <= end).order_by(Order.date.desc()).all()
+    else:
+        coffee_sales = CoffeeSale.query.order_by(CoffeeSale.date.desc()).all()
+        orders = Order.query.order_by(Order.date.desc()).all()
 
     # Aggregate totals
     total_coffee_sales = sum(s.total_sales for s in coffee_sales)
@@ -146,7 +194,7 @@ def general_report():
             'date': s.date,
             'product': s.product.name,
             'waiter': s.waiter.name if s.waiter else None,
-            'shift': s.shift.name if s.shift else None,
+            'shift': s.shift,  # pass the shift object
             'qty': s.quantity_sold,
             'unit_price': s.unit_price,
             'total': s.total_sales,
@@ -158,7 +206,7 @@ def general_report():
             'date': o.date,
             'product': ', '.join([item.product.name for item in o.items]),
             'waiter': o.waiter.name if o.waiter else None,
-            'shift': o.shift.name if o.shift else None,
+            'shift': o.shift,  # pass the shift object
             'qty': sum(item.quantity for item in o.items),
             'unit_price': '',
             'total': o.total_amount,
@@ -174,7 +222,8 @@ def general_report():
         total_order_sales=total_order_sales,
         grand_total=grand_total,
         recent_transactions=recent_transactions,
-        currency='Rwf'
+        currency='Rwf',
+        selected_date=selected_date_str or ''
     )
 
 # ==============================================

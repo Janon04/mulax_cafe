@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0">
+            <div>
+                <h5 class="mb-0">Archived Products</h5>
+                <p class="text-muted small mb-0">Restore archived products when needed</p>
+            </div>
+            <a href="{{ url_for('product.list_products') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Active
+            </a>
+        </div>
+
+        <div class="card-body">
+            {% if products.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Details</th>
+                            <th>Archived On</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products.items %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ product.name }}</div>
+                                <div class="text-muted small">{{ product.sku }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill">
+                                    {{ product.category|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if product.deleted_at %}
+                                <span class="text-muted small">
+                                    <i class="far fa-clock me-1"></i>
+                                    {{ product.deleted_at.strftime('%Y-%m-%d %H:%M') }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted small">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <form action="{{ url_for('product.restore_product', product_id=product.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="fas fa-trash-restore me-1"></i> Restore
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if products.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mt-4">
+                    <li class="page-item {% if not products.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('product.archived_products', page=products.prev_num) }}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% for p in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=3) %}
+                        {% if p %}
+                            <li class="page-item {% if p == products.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('product.archived_products', page=p) }}">{{ p }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not products.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('product.archived_products', page=products.next_num) }}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-archive fa-3x text-muted mb-3"></i>
+                <h5>No archived products</h5>
+                <p class="text-muted">Products you archive will appear here</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

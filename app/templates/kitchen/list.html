@@ -3,54 +3,179 @@
 {% block title %}Kitchen Inventory{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Kitchen Inventory</h2>
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('kitchen.record_usage') }}" class="btn me-2" style="background-color: #7B3F00; color: white;">
-            <i class="fas fa-utensils"></i> Record Usage
-        </a>
-        <a href="{{ url_for('kitchen.stock_movements') }}" class="btn" style="background-color: #FFD700; color: #212529;">
-            <i class="fas fa-exchange-alt"></i> View Movements
-        </a>
-        <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Go Back
-        </a>
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Kitchen Inventory</h2>
+            <p class="text-muted small mb-0">Manage and track kitchen stock levels</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('kitchen.record_usage') }}" class="btn me-2" style="background-color: #7B3F00; color: white;">
+                <i class="fas fa-utensils me-1"></i> Record Usage
+            </a>
+            <a href="{{ url_for('kitchen.stock_movements') }}" class="btn" style="background-color: #FFD700; color: #212529;">
+                <i class="fas fa-exchange-alt me-1"></i> View Movements
+            </a>
+            <a href="{{ url_for('product.list_products') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Products
+            </a>
+        </div>
     </div>
-</div>
 
-{% for category, products in categories.items() %}
-<div class="card mb-4">
-    <div class="card-header text-white" style="background-color: #7B3F00;">
-        {{ category }} ({{ products|length }} items)
-    </div>
-    <div class="card-body">
-        <div class="row">
-            {% for product in products %}
-            <div class="col-md-4 mb-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ product.name }}</h5>
-                        <div class="d-flex justify-content-between">
-                            <span>Stock:</span>
-                            <strong class="{% if product.current_stock < 5 %}text-danger{% elif product.current_stock < 10 %}text-warning{% else %}text-success{% endif %}">
-                                {{ product.current_stock }} {{ product.unit }}
-                            </strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Unit Price:</span>
-                            <strong>{{ product.unit_price }}</strong>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-transparent">
-                        <a href="{{ url_for('product.add_stock', product_id=product.id) }}" class="btn btn-sm btn-outline-primary">
-                            Manage Stock
-                        </a>
+    <!-- Search and Filter Bar -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body pt-0">
+            <div class="row mb-3 g-2">
+                <div class="col-md-6">
+                    <form method="GET" class="input-group">
+                        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search products..." 
+                               value="{{ request.args.get('q', '') }}">
+                        <button class="btn btn-sm btn-outline-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-end gap-2">
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('kitchen.inventory') }}" 
+                                    {% if not request.args.get('category') %}selected{% endif %}>
+                                All Categories
+                            </option>
+                            {% for category in all_categories %}
+                            <option value="{{ url_for('kitchen.inventory', category=category) }}"
+                                    {% if request.args.get('category') == category %}selected{% endif %}>
+                                {{ category|title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                            <option value="{{ url_for('kitchen.inventory', sort='name_asc') }}"
+                                    {% if request.args.get('sort') == 'name_asc' or not request.args.get('sort') %}selected{% endif %}>
+                                Sort: A-Z
+                            </option>
+                            <option value="{{ url_for('kitchen.inventory', sort='name_desc') }}"
+                                    {% if request.args.get('sort') == 'name_desc' %}selected{% endif %}>
+                                Sort: Z-A
+                            </option>
+                            <option value="{{ url_for('kitchen.inventory', sort='stock_asc') }}"
+                                    {% if request.args.get('sort') == 'stock_asc' %}selected{% endif %}>
+                                Sort: Low Stock
+                            </option>
+                            <option value="{{ url_for('kitchen.inventory', sort='stock_desc') }}"
+                                    {% if request.args.get('sort') == 'stock_desc' %}selected{% endif %}>
+                                Sort: High Stock
+                            </option>
+                        </select>
                     </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
     </div>
+
+    <!-- Inventory Cards -->
+    {% if categories %}
+        {% for category, products in categories.items() %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #7B3F00;">
+                <span>{{ category }} ({{ products|length }} items)</span>
+                
+            </div>
+            <div class="card-body">
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                    {% for product in products %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h5 class="card-title mb-3">{{ product.name }}</h5>
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        {{ product.sku }}
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <div class="progress" style="height: 6px;">
+                                        {% set progress = (product.current_stock / (product.min_stock * 2)) * 100 %}
+                                        <div class="progress-bar bg-{% if progress < 25 %}danger{% elif progress < 50 %}warning{% else %}success{% endif %}" 
+                                             role="progressbar" style="width: {{ progress }}%" 
+                                             aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ product.current_stock|int }} / {{ product.min_stock * 2 }} {{ product.unit }}
+                                    </small>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Current Stock:</span>
+                                    <strong class="{% if product.current_stock <= product.min_stock %}text-danger{% elif product.current_stock < product.min_stock * 1.5 %}text-warning{% else %}text-success{% endif %}">
+                                        {{ product.current_stock }} {{ product.unit }}
+                                    </strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Min Stock:</span>
+                                    <strong>{{ product.min_stock }} {{ product.unit }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Unit Price:</span>
+                                    <strong>{{ product.unit_price|format_currency }}</strong>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent d-flex justify-content-between">
+                                <a href="{{ url_for('product.add_stock', product_id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-plus"></i> Add Stock
+                                </a>
+                                <a href="{{ url_for('kitchen.record_usage', product_id=product.id) }}" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-minus"></i> Record Usage
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h5>No products found</h5>
+                <p class="text-muted">Try adjusting your filters or add new products</p>
+            </div>
+        </div>
+    {% endif %}
 </div>
-{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Persist filter parameters
+    const filterSelects = document.querySelectorAll('select.form-select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const url = new URL(this.value);
+            const params = new URLSearchParams(window.location.search);
+            
+            // Preserve other filter parameters
+            params.forEach((value, key) => {
+                if (key !== 'category' && key !== 'sort' && !url.searchParams.has(key)) {
+                    url.searchParams.append(key, value);
+                }
+            });
+            
+            window.location.href = url.toString();
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -2,8 +2,6 @@
 
 {% block content %}
 <div class="container mt-4">
-
-
     <div class="d-flex justify-content-between align-items-center mb-2">
         <div></div>
         <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary">
@@ -12,6 +10,73 @@
     </div>
 
     <h2>Order Management</h2>
+
+    <!-- Enhanced Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filter Orders</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                
+                <!-- User Filter (for admins/managers) -->
+                {% if current_user.role in ['admin', 'manager'] %}
+                <div class="col-md-2">
+                    <label for="user_id" class="form-label">Server</label>
+                    <select class="form-select" id="user_id" name="user_id">
+                        <option value="">All Servers</option>
+                        {% for user in active_users %}
+                        <option value="{{ user.id }}" {% if user_id and user.id == user_id|int %}selected{% endif %}>
+                            {{ user.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Date Filter -->
+                <div class="col-md-2">
+                    <label for="date_filter" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="date_filter" name="date_filter" 
+                           value="{{ date_filter if date_filter else '' }}">
+                </div>
+
+                <!-- Shift Filter -->
+                <div class="col-md-2">
+                    <label for="shift_id" class="form-label">Shift</label>
+                    <select class="form-select" id="shift_id" name="shift_id">
+                        <option value="">All Shifts</option>
+                        {% for shift in active_shifts %}
+                        <option value="{{ shift.id }}" {% if shift_id and shift.id == shift_id|int %}selected{% endif %}>
+                            {{ shift.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sort Options -->
+                <div class="col-md-2">
+                    <label for="sort" class="form-label">Sort By</label>
+                    <select class="form-select" id="sort" name="sort">
+                        <option value="date_desc" {% if request.args.get('sort', 'date_desc') == 'date_desc' %}selected{% endif %}>Newest First</option>
+                        <option value="date_asc" {% if request.args.get('sort') == 'date_asc' %}selected{% endif %}>Oldest First</option>
+                        <option value="amount_desc" {% if request.args.get('sort') == 'amount_desc' %}selected{% endif %}>Highest Amount</option>
+                        <option value="amount_asc" {% if request.args.get('sort') == 'amount_asc' %}selected{% endif %}>Lowest Amount</option>
+                    </select>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div class="col-md-12 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                    <a href="{{ url_for('orders.list_orders') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-times"></i> Clear 
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Top Buttons -->
     <div class="mb-4 d-flex justify-content-between align-items-center">
@@ -24,7 +89,7 @@
             </a>
         </div>
 
-        <!-- Filter Buttons -->
+        <!-- Quick Status Filter Buttons -->
         <div class="btn-group">
             {% for s, label, color in [
                 ('all', 'All', 'secondary'),
@@ -33,7 +98,12 @@
                 ('served', 'Served', 'success'),
                 ('completed', 'Completed', 'primary'),
                 ('cancelled', 'Cancelled', 'danger')] %}
-            <a href="{{ url_for('orders.list_orders', status=s) }}"
+            <a href="{{ url_for('orders.list_orders', status=s, 
+                              search=request.args.get('search', ''),
+                              user_id=request.args.get('user_id', ''),
+                              date_filter=request.args.get('date_filter', ''),
+                              shift_id=request.args.get('shift_id', ''),
+                              sort=request.args.get('sort', '')) }}"
                class="btn btn-sm btn-outline-{{ color }} {% if status == s %}active{% endif %}">
                 {{ label }}
             </a>
@@ -154,7 +224,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center">No orders found</td>
+                    <td colspan="9" class="text-center">No orders found matching your criteria</td>
                 </tr>
                 {% endfor %}
             </tbody>

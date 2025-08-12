@@ -110,13 +110,15 @@ class EmailNotifier:
 
             subject = f"New Requisition Created: #{requisition.id}"
             # Get username and product name if available
-            username = requisition.requester.name if hasattr(requisition, 'requester') and requisition.requester else str(requisition.user_id)
+            requester= Requisition.user_id
+            from flask_login import current_user
+            username = current_user.username if hasattr(current_user, 'username') else str(current_user.get_id())
             product_name = requisition.product.name if hasattr(requisition, 'product') and requisition.product else 'N/A'
             body = (
                 f"New requisition has been created:\n\n"
                 f"Requisition ID: {requisition.id}\n"
                 f"Product: {product_name}\n"
-                f"Created by: {username} (User ID: {requisition.user_id})\n"
+                f"Created by: {username}\n"
                 f"Quantity requested: {requisition.requested_qty}\n"
                 f"Current Quantity available: {requisition.current_stock}\n"
                 f"Date: {requisition.date.strftime('%Y-%m-%d %H:%M')}\n"

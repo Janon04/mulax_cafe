@@ -5,6 +5,14 @@
 {% block content %}
 <div class="container my-4">
     <h2 class="mb-4">General Report (Orders & Coffee Sales)</h2>
+    <form method="get" class="mb-3 d-flex align-items-center gap-2">
+        <label for="date" class="form-label mb-0 me-2">Filter by Date:</label>
+        <input type="date" id="date" name="date" class="form-control" style="max-width: 200px;" value="{{ selected_date }}">
+        <button type="submit" class="btn btn-primary ms-2">Filter</button>
+        {% if selected_date %}
+            <a href="{{ url_for('coffee.general_report') }}" class="btn btn-secondary ms-2">Clear</a>
+        {% endif %}
+    </form>
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card text-white bg-success mb-3">
@@ -47,20 +55,39 @@
                             <th>Shift</th>
                             <th>Qty</th>
                             <th>Total ({{ currency }})</th>
+                            <th>Payment</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for tx in recent_transactions %}
+                        {% if recent_transactions|length == 0 %}
                         <tr>
-                            <td>{{ tx.date.strftime('%Y-%m-%d %H:%M') }}</td>
-                            <td>{{ tx.type }}</td>
-                            <td>{{ tx.product }}</td>
-                            <td>{{ tx.waiter or 'N/A' }}</td>
-                            <td>{{ tx.shift or 'N/A' }}</td>
-                            <td>{{ tx.qty }}</td>
-                            <td>{{ tx.total | int | string | replace(',', ' ') | format_currency }}</td>
+                            <td colspan="7" class="text-center text-muted">No data found for this date.</td>
                         </tr>
-                        {% endfor %}
+                        {% else %}
+                            {% for tx in recent_transactions %}
+                            <tr>
+                                <td>{{ tx.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ tx.type }}</td>
+                                <td>{{ tx.product }}</td>
+                                <td>{{ tx.waiter or 'N/A' }}</td>
+                                <td>
+                                    {% if tx.shift and tx.shift.start_time and tx.shift.end_time %}
+                                        {% if tx.shift.start_time.hour == 7 and tx.shift.end_time.hour == 17 %}
+                                            Day Shift
+                                        {% else %}
+                                            Night Shift
+                                        {% endif %}
+                                    {% elif tx.shift %}
+                                        {{ tx.shift }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>{{ tx.qty }}</td>
+                                <td>{{ tx.total | int | string | replace(',', ' ') | format_currency }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>

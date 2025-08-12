@@ -25,11 +25,59 @@ from sqlalchemy.orm import joinedload
 @bp.route('/')
 @login_required
 def list_requisitions():
+    # Get filter parameters
+    search_query = request.args.get('q', '')
+    status_filter = request.args.get('status', 'all')
+    user_filter = request.args.get('user')
+    sort = request.args.get('sort', 'date_desc')
+    
+    # Base query
     if current_user.role in ['admin', 'manager']:
-        requisitions = Requisition.query.options(joinedload(Requisition.requester).joinedload(User.current_shift)).order_by(Requisition.date.desc()).all()
+        query = Requisition.query.options(
+            joinedload(Requisition.requester),
+            joinedload(Requisition.approver),
+            joinedload(Requisition.product),
+            joinedload(Requisition.shift)
+        )
     else:
-        requisitions = Requisition.query.options(joinedload(Requisition.requester).joinedload(User.current_shift)).filter_by(user_id=current_user.id).order_by(Requisition.date.desc()).all()
-    return render_template('requisitions/list.html', requisitions=requisitions)
+        query = Requisition.query.options(
+            joinedload(Requisition.product),
+            joinedload(Requisition.shift)
+        ).filter_by(user_id=current_user.id)
+    
+    # Apply filters
+    if search_query:
+        query = query.join(Product).filter(
+            db.or_(
+                Product.name.ilike(f'%{search_query}%'),
+                Requisition.notes.ilike(f'%{search_query}%'),
+                User.username.ilike(f'%{search_query}%')
+            )
+        )
+    
+    if status_filter != 'all':
+        query = query.filter(Requisition.status == status_filter)
+    
+    if user_filter and current_user.role in ['admin', 'manager']:
+        query = query.filter(Requisition.user_id == user_filter)
+    
+    # Apply sorting
+    if sort == 'date_asc':
+        query = query.order_by(Requisition.date.asc())
+    elif sort == 'qty_desc':
+        query = query.order_by(Requisition.requested_qty.desc())
+    else:  # Default: date_desc
+        query = query.order_by(Requisition.date.desc())
+    
+    # Get all users for filter dropdown (admin/manager only)
+    all_users = User.query.order_by(User.username).all() if current_user.role in ['admin', 'manager'] else []
+    
+    requisitions = query.all()
+    return render_template(
+        'requisitions/list.html',
+        requisitions=requisitions,
+        all_users=all_users
+    )
 
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -141,27 +189,31 @@ def reject_requisition(id):
     flash('Requisition rejected', 'info')
     return redirect(url_for('requisitions.list_requisitions'))
 
+
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_or_manager_required
 def edit_requisition(id):
     requisition = Requisition.query.get_or_404(id)
-    
     time_since_submission = (datetime.utcnow() - requisition.date).total_seconds()
-    can_edit = (requisition.user_id == current_user.id and 
-                requisition.status == 'pending' and 
-                time_since_submission < Config.REQUISITION_EDIT_WINDOW)
-    
+    # Admins/managers can always edit. Regular users can edit their own pending requisition only BEFORE 2 minutes
+    is_admin_or_manager = current_user.role in ['admin', 'manager']
+    is_owner = requisition.user_id == current_user.id
+    is_pending = requisition.status == 'pending'
+    can_edit = False
+    if is_admin_or_manager:
+        can_edit = True
+    elif is_owner and is_pending and time_since_submission < 120:
+        can_edit = True
     if not can_edit:
-        flash('You cannot edit this requisition', 'danger')
+        if is_owner and is_pending and time_since_submission >= 120:
+            flash('You can no longer edit this requisition. Please request a manager or admin to edit.', 'warning')
+        else:
+            flash('You cannot edit this requisition', 'danger')
         return redirect(url_for('requisitions.list_requisitions'))
-    
     if request.method == 'POST':
         requested_qty = float(request.form.get('quantity'))
-        
         requisition.requested_qty = requested_qty
         db.session.commit()
-        
         try:
             notifier = EmailNotifier()
             subject = f"✏️ Requisition #{requisition.id} Edited"
@@ -177,9 +229,7 @@ def edit_requisition(id):
             )
         except Exception as e:
             current_app.logger.error(f"Failed to send edit notification: {str(e)}")
-        
         flash('Requisition updated successfully', 'success')
         return redirect(url_for('requisitions.list_requisitions'))
-    
     products = Product.query.order_by(Product.name).all()
     return render_template('requisitions/edit.html', requisition=requisition, products=products)
