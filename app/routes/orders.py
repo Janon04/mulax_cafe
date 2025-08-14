@@ -123,20 +123,20 @@ def new_order():
     # Determine current shift
     if day_shift_start <= now < night_shift_start:
         current_shift = Shift.query.filter(
-            (Shift.name == 'Day Shift') | (Shift.name == 'Morning'),  # Backward compatible
+            (Shift.name == 'Day Shift') | (Shift.name == 'Day Shift'),  # Backward compatible
             Shift.is_active == True
         ).first()
         # If no Day Shift found but Morning exists, use Morning
         if not current_shift:
-            current_shift = Shift.query.filter_by(name='Morning', is_active=True).first()
+            current_shift = Shift.query.filter_by(name='Day Shift', is_active=True).first()
     else:
         current_shift = Shift.query.filter(
-            (Shift.name == 'Night Shift') | (Shift.name == 'Evening'),  # Backward compatible
+            (Shift.name == 'Night Shift') | (Shift.name == 'Night Shift'),  # Backward compatible
             Shift.is_active == True
         ).first()
         # If no Night Shift found but Evening exists, use Evening
         if not current_shift:
-            current_shift = Shift.query.filter_by(name='Evening', is_active=True).first()
+            current_shift = Shift.query.filter_by(name='Night Shift', is_active=True).first()
 
     if request.method == 'POST':
         table_id = request.form.get('table_id')

@@ -5,14 +5,29 @@
 {% block content %}
 <div class="container my-4">
     <h2 class="mb-4">General Report (Orders & Coffee Sales)</h2>
-    <form method="get" class="mb-3 d-flex align-items-center gap-2">
-        <label for="date" class="form-label mb-0 me-2">Filter by Date:</label>
-        <input type="date" id="date" name="date" class="form-control" style="max-width: 200px;" value="{{ selected_date }}">
-        <button type="submit" class="btn btn-primary ms-2">Filter</button>
-        {% if selected_date %}
-            <a href="{{ url_for('coffee.general_report') }}" class="btn btn-secondary ms-2">Clear</a>
-        {% endif %}
-    </form>
+    
+    <div class="d-flex justify-content-between mb-3">
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label for="date" class="form-label mb-0 me-2">Filter by Date:</label>
+            <input type="date" id="date" name="date" class="form-control" style="max-width: 200px;" value="{{ selected_date }}">
+            <button type="submit" class="btn btn-primary ms-2">Filter</button>
+            {% if selected_date or request.args.get('category') %}
+                <a href="{{ url_for('coffee.general_report') }}" class="btn btn-secondary ms-2">Clear</a>
+            {% endif %}
+        </form>
+        
+        <div>
+            <select class="form-select form-select-sm" style="width: auto;" onchange="updateCategoryFilter(this.value)">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>
+                    {{ category|title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card text-white bg-success mb-3">
@@ -39,6 +54,7 @@
             </div>
         </div>
     </div>
+
     <div class="card">
         <div class="card-header" style="background-color: #7B3F00; color: white;">
             Recent Transactions (Orders & Coffee Sales)
@@ -46,55 +62,91 @@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover table-sm">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Product(s)</th>
-                            <th>Waiter</th>
-                            <th>Shift</th>
-                            <th>Qty</th>
-                            <th>Total ({{ currency }})</th>
-                            <th>Payment</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if recent_transactions|length == 0 %}
-                        <tr>
-                            <td colspan="7" class="text-center text-muted">No data found for this date.</td>
-                        </tr>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Product(s)</th>
+            <th>Waiter</th>
+            <th>Shift</th>
+            <th>Qty</th>
+            <th>Total ({{ currency }})</th>
+            <th>Payment</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if recent_transactions|length == 0 %}
+        <tr>
+            <td colspan="8" class="text-center text-muted">No transactions found for selected filters.</td>
+        </tr>
+        {% else %}
+            {% for tx in recent_transactions %}
+            <tr>
+                <td>{{ tx.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <span class="badge 
+                        {% if tx.type == 'Coffee Sale' %}bg-success{% else %}bg-primary{% endif %}">
+                        {{ tx.type }}
+                    </span>
+                </td>
+                <td>{{ tx.product }}</td>
+                <td>{{ tx.waiter or 'N/A' }}</td>
+                <td>
+                    {% if tx.shift and tx.shift.start_time and tx.shift.end_time %}
+                        {% if tx.shift.start_time.hour == 7 and tx.shift.end_time.hour == 17 %}
+                            <span class="badge bg-info">Day Shift</span>
                         {% else %}
-                            {% for tx in recent_transactions %}
-                            <tr>
-                                <td>{{ tx.date.strftime('%Y-%m-%d %H:%M') }}</td>
-                                <td>{{ tx.type }}</td>
-                                <td>{{ tx.product }}</td>
-                                <td>{{ tx.waiter or 'N/A' }}</td>
-                                <td>
-                                    {% if tx.shift and tx.shift.start_time and tx.shift.end_time %}
-                                        {% if tx.shift.start_time.hour == 7 and tx.shift.end_time.hour == 17 %}
-                                            Day Shift
-                                        {% else %}
-                                            Night Shift
-                                        {% endif %}
-                                    {% elif tx.shift %}
-                                        {{ tx.shift }}
-                                    {% else %}
-                                        N/A
-                                    {% endif %}
-                                </td>
-                                <td>{{ tx.qty }}</td>
-                                <td>{{ tx.total | int | string | replace(',', ' ') | format_currency }}</td>
-                            </tr>
-                            {% endfor %}
+                            <span class="badge bg-dark">Night Shift</span>
                         {% endif %}
-                    </tbody>
-                </table>
+                    {% elif tx.shift %}
+                        {{ tx.shift }}
+                    {% else %}
+                        <span class="text-muted">N/A</span>
+                    {% endif %}
+                </td>
+                <td>{{ tx.qty }}</td>
+                <td class="fw-bold">{{ tx.total | int | string | replace(',', ' ') | format_currency }}</td>
+                <td>
+                    {% if tx.payment and tx.payment != 'N/A' %}
+                        <span class="badge 
+                            {% if tx.payment.lower() in ['cash', 'espèces'] %}bg-success
+                            {% elif tx.payment.lower() in ['card', 'carte'] %}bg-primary
+                            {% elif tx.payment.lower() in ['mobile', 'mobile money'] %}bg-warning text-dark
+                            {% else %}bg-secondary{% endif %}">
+                            {{ tx.payment }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-success">Cash</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
             </div>
         </div>
     </div>
+
     <div class="mt-3">
         <a href="{{ url_for('coffee.list_sales') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Go Back</a>
     </div>
 </div>
+
+<script>
+function updateCategoryFilter(category) {
+    const url = new URL(window.location.href);
+    if (category) {
+        url.searchParams.set('category', category);
+    } else {
+        url.searchParams.delete('category');
+    }
+    // Preserve date filter if it exists
+    const dateFilter = document.getElementById('date').value;
+    if (dateFilter) {
+        url.searchParams.set('date', dateFilter);
+    }
+    window.location.href = url.toString();
+}
+</script>
 {% endblock %}

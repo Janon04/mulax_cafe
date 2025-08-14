@@ -174,19 +174,16 @@ def view_product(product_id):
 @bp.route('/<int:product_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_product(product_id):
-    """Edit existing product details"""
+    """Edit existing product details (without changing stock)"""
     product = Product.query.get_or_404(product_id)
     
     if request.method == 'POST':
         try:
-            original_stock = product.current_stock
-            new_stock = float(request.form.get('current_stock', 0))
+            # Get original values for comparison
+            original_min_stock = product.min_stock
             new_min_stock = float(request.form.get('min_stock', 5))
             
-            # Check if stock is going below minimum after edit
-            will_be_low_stock = new_stock <= new_min_stock
-            
-            # Update product details
+            # Update product details (excluding current_stock)
             product.name = request.form['name']
             product.category = request.form['category']
             product.description = request.form.get('description')
@@ -198,23 +195,10 @@ def edit_product(product_id):
             product.unit_price = float(request.form.get('unit_price', 0))
             product.tax_rate = float(request.form.get('tax_rate', 0))
             
-            # Record stock adjustment if changed
-            if new_stock != original_stock:
-                difference = new_stock - original_stock
-                movement_type = 'adjustment_in' if difference > 0 else 'adjustment_out'
-                
-                movement = StockMovement(
-                    product_id=product.id,
-                    opening_stock=original_stock,
-                    stock_in=difference if difference > 0 else 0,
-                    stock_out=-difference if difference < 0 else 0,
-                    closing_stock=new_stock,
-                    movement_type=movement_type,
-                    user_id=current_user.id,
-                    notes='Manual adjustment'
-                )
-                db.session.add(movement)
-                product.current_stock = new_stock
+            # Check if minimum stock threshold was changed and now triggers low stock
+            will_be_low_stock = (product.current_stock <= new_min_stock and 
+                               (new_min_stock != original_min_stock or 
+                                product.current_stock <= original_min_stock))
             
             db.session.commit()
             
@@ -226,15 +210,15 @@ def edit_product(product_id):
                 except Exception as e:
                     current_app.logger.error(f"Failed to send low stock notification: {str(e)}")
             
-            flash('Product updated successfully', 'success')
+            flash('Product details updated successfully', 'success')
             return redirect(url_for('product.view_product', product_id=product.id))
             
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Error updating product {product_id}: {str(e)}")
             flash(f'Error updating product: {str(e)}', 'danger')
     
     return render_template('product/form.html', product=product)
-
 @bp.route('/<int:product_id>/delete', methods=['POST'])
 @login_required
 def delete_product(product_id):
@@ -446,3 +430,51 @@ def download_product_pdf():
 
     result.seek(0)
     return send_file(result, as_attachment=True, download_name="product_list.pdf", mimetype='application/pdf')
+
+@bp.route('/<int:product_id>/update_stock', methods=['GET', 'POST'])
+@login_required
+def update_stock(product_id):
+    """Update product stock by adding to existing quantity"""
+    product = Product.query.get_or_404(product_id)
+    
+    if request.method == 'POST':
+        try:
+            additional_stock = float(request.form.get('quantity', 0))
+            notes = request.form.get('notes', 'Stock update')
+            
+            if additional_stock <= 0:
+                flash('Quantity must be greater than 0', 'danger')
+                return redirect(url_for('product.update_stock', product_id=product_id))
+            
+            # Record stock movement
+            movement = StockMovement(
+                product_id=product.id,
+                opening_stock=product.current_stock,
+                stock_in=additional_stock,
+                closing_stock=product.current_stock + additional_stock,
+                movement_type='update',
+                user_id=current_user.id,
+                notes=notes
+            )
+            
+            # Update product stock
+            product.current_stock += additional_stock
+            db.session.add(movement)
+            db.session.commit()
+            
+            # Check low stock after update
+            if product.current_stock <= product.min_stock:
+                try:
+                    notifier = EmailNotifier()
+                    notifier.notify_low_stock(product.id)
+                except Exception as e:
+                    current_app.logger.error(f"Failed to send low stock notification: {str(e)}")
+            
+            flash(f'Added {additional_stock} {product.unit} to stock. New total: {product.current_stock}', 'success')
+            return redirect(url_for('product.view_product', product_id=product_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating stock: {str(e)}', 'danger')
+    
+    return render_template('product/update_stock.html', product=product)

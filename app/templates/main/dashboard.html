@@ -395,9 +395,11 @@
                                     </div>
                                 </div>
                                 <div class="flex-shrink-0">
-                                    <a href="{{ url_for('product.edit_product', product_id=product.id) }}" class="btn btn-sm btn-outline-danger" style="font-size: 0.75rem;">
+                                    <!-- <a href="{{ url_for('product.edit_product', product_id=product.id) }}"
+
+                                    class="btn btn-sm btn-outline-danger" style="font-size: 0.75rem;">
                                         Restock
-                                    </a>
+                                    </a> -->
                                 </div>
                             </div>
                             {% endfor %}
@@ -667,57 +669,67 @@
         updateCurrentShiftIndicator();
         
         // ====================== TODAY'S ORDERS ======================
-        function updateTodayOrders() {
-            const refreshIcon = document.getElementById('today-refresh-icon');
-            const lastUpdatedText = document.getElementById('today-last-updated-text');
-            const ordersCountEl = document.getElementById('today-orders-count');
-            const countChangeIndicator = document.getElementById('today-count-change-indicator');
-            const revenueEl = document.getElementById('today-revenue');
-            const badgeEl = document.getElementById('new-today-orders-badge');
+function updateTodayOrders() {
+    const refreshIcon = document.getElementById('today-refresh-icon');
+    const lastUpdatedText = document.getElementById('today-last-updated-text');
+    const ordersCountEl = document.getElementById('today-orders-count');
+    const countChangeIndicator = document.getElementById('today-count-change-indicator');
+    const revenueEl = document.getElementById('today-revenue');
+    const badgeEl = document.getElementById('new-today-orders-badge');
+    
+    // Store current values before update
+    const currentCount = parseInt(ordersCountEl.textContent) || 0;
+    
+    refreshIcon.style.display = 'inline-block';
+    lastUpdatedText.textContent = 'Updating...';
+    
+    fetch('{{ url_for("orders.get_today_stats") }}')
+        .then(response => {
+            if (!response.ok) throw new Error('Network error');
+            return response.json();
+        })
+        .then(data => {
+            console.log('Today orders data:', data);
+            const newCount = data.count || 0;
+            const newRevenue = parseFloat(data.revenue) || 0;
             
-            refreshIcon.style.display = 'inline-block';
-            lastUpdatedText.textContent = 'Updating...';
+            // Only update if the count has actually changed
+            if (newCount !== currentCount) {
+                // Show visual indicators only for new orders
+                if (newCount > currentCount) {
+                    const countDiff = newCount - currentCount;
+                    countChangeIndicator.textContent = `+${countDiff}`;
+                    countChangeIndicator.style.display = 'inline-block';
+                    countChangeIndicator.className = 'ms-2 small fw-bold text-success';
+                    
+                    badgeEl.style.display = 'inline-block';
+                    setTimeout(() => {
+                        badgeEl.style.display = 'none';
+                        countChangeIndicator.style.display = 'none';
+                    }, 5000);
+                }
+                
+                // Update the displayed count with the exact backend value
+                ordersCountEl.textContent = newCount;
+            }
             
-            fetch('{{ url_for("orders.get_today_stats") }}')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network error');
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Today orders data:', data);
-                    const newCount = data.count || 0;
-                    const newRevenue = parseFloat(data.revenue) || 0;
-                    const countDiff = newCount - parseInt(ordersCountEl.textContent);
-                    
-                    // Update count with change indicator
-                    if (countDiff !== 0) {
-                        countChangeIndicator.textContent = (countDiff > 0 ? `+${countDiff}` : countDiff);
-                        countChangeIndicator.style.display = 'inline-block';
-                        countChangeIndicator.className = `ms-2 small fw-bold ${countDiff > 0 ? 'text-success' : 'text-danger'}`;
-                        
-                        if (countDiff > 0) {
-                            badgeEl.style.display = 'inline-block';
-                            setTimeout(() => badgeEl.style.display = 'none', 5000);
-                        }
-                    }
-                    
-                    ordersCountEl.textContent = newCount;
-                    revenueEl.textContent = newRevenue.toFixed(2);
-                    
-                    // Update timestamp
-                    const now = new Date();
-                    lastUpdatedText.textContent = `Updated at ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-                    
-                    refreshIcon.style.display = 'none';
-                    setTimeout(updateTodayOrders, 30000); // Refresh every 30 seconds
-                })
-                .catch(error => {
-                    console.error("Today orders update failed:", error);
-                    refreshIcon.style.display = 'none';
-                    lastUpdatedText.textContent = 'Update failed - retrying';
-                    setTimeout(updateTodayOrders, 60000); // Retry after 1 minute on error
-                });
-        }
+            // Always update revenue
+            revenueEl.textContent = newRevenue.toFixed(2);
+            
+            // Update timestamp
+            const now = new Date();
+            lastUpdatedText.textContent = `Updated at ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            refreshIcon.style.display = 'none';
+            setTimeout(updateTodayOrders, 30000); // Refresh every 30 seconds
+        })
+        .catch(error => {
+            console.error("Today orders update failed:", error);
+            refreshIcon.style.display = 'none';
+            lastUpdatedText.textContent = 'Update failed - retrying';
+            setTimeout(updateTodayOrders, 60000); // Retry after 1 minute on error
+        });
+}
 
         // ====================== TODAY'S REVENUE ======================
         function updateTodaysRevenue() {

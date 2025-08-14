@@ -310,6 +310,7 @@ class Order(db.Model):
     table_id = db.Column(db.Integer, db.ForeignKey('tables.id'), nullable=False)
     status = db.Column(db.String(20), default='pending')
     notes = db.Column(db.Text)
+    payment_mode = db.Column(db.String(50))
     total_amount = db.Column(db.Float, default=0.0)
     recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # For legacy compatibility
     waiter_id = db.Column(db.Integer, db.ForeignKey('waiters.id'), nullable=True)
@@ -466,7 +467,7 @@ class Waiter(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    phone_number = db.Column(db.String(20), nullable=True)
+    phone_number = db.Column(db.String(10), nullable=True)
     email = db.Column(db.String(120), nullable=True, unique=True)
     is_active = db.Column(db.Boolean, default=True)
 

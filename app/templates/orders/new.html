@@ -39,8 +39,6 @@
             </div>
         </div>
 
-
-        
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="form-group">
@@ -64,7 +62,6 @@
             </div>
         </div>
     
-        
         <h4 class="mb-3">Order Items</h4>
         <div class="table-responsive mb-4">
             <table class="table table-bordered">
@@ -104,6 +101,22 @@
                 </tfoot>
             </table>
         </div>
+
+        <!-- Payment Mode Selection -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="payment_mode">Payment Mode</label>
+                    <select class="form-control" id="payment_mode" name="payment_mode" required>
+                        <option value="">Select payment mode</option>
+                        <option value="Cash" {% if request.form.payment_mode == 'Cash' %}selected{% endif %}>Cash</option>
+                        <option value="Mobile Money" {% if request.form.payment_mode == 'Mobile Money' %}selected{% endif %}>Mobile Money</option>
+                        <option value="Card" {% if request.form.payment_mode == 'Card' %}selected{% endif %}>Card</option>
+                        <option value="Other" {% if request.form.payment_mode == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+            </div>
+        </div>
         
         <div class="form-group">
             <button type="submit" class="btn btn-primary">
@@ -133,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
             total += subtotal;
         });
         
-    document.getElementById('order-total').textContent = total.toFixed(2);
+        document.getElementById('order-total').textContent = total.toFixed(2);
     }
     
     quantityInputs.forEach(input => {

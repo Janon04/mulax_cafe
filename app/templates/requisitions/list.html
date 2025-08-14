@@ -21,72 +21,82 @@
     </div>
 
     <!-- Filter and Search Section -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-body pt-0">
-            <div class="row mb-3 g-2">
-                <div class="col-md-6">
-                    <form method="GET" class="input-group">
-                        <input type="text" name="q" class="form-control form-control-sm" placeholder="Search requisitions..." 
-                               value="{{ request.args.get('q', '') }}">
-                        <button class="btn btn-sm btn-outline-primary" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </form>
-                </div>
-                <div class="col-md-6">
-                    <div class="d-flex justify-content-end gap-2">
-                        {% if current_user.role in ['admin', 'manager'] %}
-                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
-                            <option value="{{ url_for('requisitions.list_requisitions') }}" 
-                                    {% if not request.args.get('user') %}selected{% endif %}>
-                                All Users
-                            </option>
-                            {% for user in all_users %}
-                            <option value="{{ url_for('requisitions.list_requisitions', user=user.id) }}"
-                                    {% if request.args.get('user')|int == user.id %}selected{% endif %}>
-                                {{ user.username }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        {% endif %}
-                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
-                            <option value="{{ url_for('requisitions.list_requisitions', status='all') }}" 
-                                    {% if not request.args.get('status') or request.args.get('status') == 'all' %}selected{% endif %}>
-                                All Statuses
-                            </option>
-                            <option value="{{ url_for('requisitions.list_requisitions', status='pending') }}"
-                                    {% if request.args.get('status') == 'pending' %}selected{% endif %}>
-                                Pending
-                            </option>
-                            <option value="{{ url_for('requisitions.list_requisitions', status='approved') }}"
-                                    {% if request.args.get('status') == 'approved' %}selected{% endif %}>
-                                Approved
-                            </option>
-                            <option value="{{ url_for('requisitions.list_requisitions', status='rejected') }}"
-                                    {% if request.args.get('status') == 'rejected' %}selected{% endif %}>
-                                Rejected
-                            </option>
-                        </select>
-                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
-                            <option value="{{ url_for('requisitions.list_requisitions', sort='date_desc') }}"
-                                    {% if request.args.get('sort') == 'date_desc' or not request.args.get('sort') %}selected{% endif %}>
-                                Sort: Newest First
-                            </option>
-                            <option value="{{ url_for('requisitions.list_requisitions', sort='date_asc') }}"
-                                    {% if request.args.get('sort') == 'date_asc' %}selected{% endif %}>
-                                Sort: Oldest First
-                            </option>
-                            <option value="{{ url_for('requisitions.list_requisitions', sort='qty_desc') }}"
-                                    {% if request.args.get('sort') == 'qty_desc' %}selected{% endif %}>
-                                Sort: Highest Qty
-                            </option>
-                        </select>
-                    </div>
+<div class="card shadow-sm mb-4">
+    <div class="card-body pt-0">
+        <div class="row mb-3 g-2 align-items-center">
+            <!-- Search Input -->
+            <div class="col-md-6">
+                <form method="GET" class="input-group" style="max-width: 350px;">
+                    <input type="text" 
+                           name="q" 
+                           class="form-control form-control-sm" 
+                           placeholder="Search requisitions..." 
+                           value="{{ request.args.get('q', '') }}">
+                    <button class="btn btn-sm btn-outline-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Filter Dropdowns -->
+            <div class="col-md-6">
+                <div class="d-flex justify-content-end gap-2">
+                    {% if current_user.role in ['admin', 'manager'] %}
+                    <!-- User Filter -->
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                        <option value="{{ url_for('requisitions.list_requisitions') }}" 
+                                {% if not request.args.get('user') %}selected{% endif %}>
+                            All Users
+                        </option>
+                        {% for user in all_users %}
+                        <option value="{{ url_for('requisitions.list_requisitions', user=user.id) }}"
+                                {% if request.args.get('user')|int == user.id %}selected{% endif %}>
+                            {{ user.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    
+                    <!-- Status Filter -->
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                        <option value="{{ url_for('requisitions.list_requisitions', status='all') }}" 
+                                {% if not request.args.get('status') or request.args.get('status') == 'all' %}selected{% endif %}>
+                            All Statuses
+                        </option>
+                        <option value="{{ url_for('requisitions.list_requisitions', status='pending') }}"
+                                {% if request.args.get('status') == 'pending' %}selected{% endif %}>
+                            Pending
+                        </option>
+                        <option value="{{ url_for('requisitions.list_requisitions', status='approved') }}"
+                                {% if request.args.get('status') == 'approved' %}selected{% endif %}>
+                            Approved
+                        </option>
+                        <option value="{{ url_for('requisitions.list_requisitions', status='rejected') }}"
+                                {% if request.args.get('status') == 'rejected' %}selected{% endif %}>
+                            Rejected
+                        </option>
+                    </select>
+                    
+                    <!-- Sort Options -->
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value">
+                        <option value="{{ url_for('requisitions.list_requisitions', sort='date_desc') }}"
+                                {% if request.args.get('sort') == 'date_desc' or not request.args.get('sort') %}selected{% endif %}>
+                            Newest First
+                        </option>
+                        <option value="{{ url_for('requisitions.list_requisitions', sort='date_asc') }}"
+                                {% if request.args.get('sort') == 'date_asc' %}selected{% endif %}>
+                            Oldest First
+                        </option>
+                        <option value="{{ url_for('requisitions.list_requisitions', sort='qty_desc') }}"
+                                {% if request.args.get('sort') == 'qty_desc' %}selected{% endif %}>
+                            Highest Qty
+                        </option>
+                    </select>
                 </div>
             </div>
         </div>
     </div>
-
+</div>
     <!-- Requisitions Table -->
     <div class="card shadow-sm border-0">
         <div class="card-header text-white d-flex justify-content-between align-items-center" style="background-color: #7B3F00;">

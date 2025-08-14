@@ -14,6 +14,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from openpyxl import Workbook
 from xhtml2pdf import pisa
+import pytz
 
 bp = Blueprint('coffee', __name__)
 
@@ -83,17 +84,26 @@ def new_sale():
 
         total_sales = quantity * unit_price
 
-        # Assign current shift
-        now = datetime.now().time()
-        current_shift = Shift.query.filter(
-            Shift.start_time <= now, 
-            Shift.end_time > now, 
-            Shift.is_active == True
-        ).first()
-        
-        if not current_shift:
-            flash('No active shift found for the current time.', 'danger')
-            return redirect(url_for('coffee.new_sale'))
+        # Automatically determine current shift based on time
+        now = datetime.now(pytz.timezone('Africa/Kigali')).time()
+        day_shift_start = datetime.strptime('07:00', '%H:%M').time()
+        night_shift_start = datetime.strptime('17:00', '%H:%M').time()
+        current_shift = None
+
+        if day_shift_start <= now < night_shift_start:
+            current_shift = Shift.query.filter(
+                (Shift.name == 'Day Shift') | (Shift.name == 'Day Shift'),
+                Shift.is_active == True
+            ).first()
+            if not current_shift:
+                current_shift = Shift.query.filter_by(name='Day Shift', is_active=True).first()
+        else:
+            current_shift = Shift.query.filter(
+                (Shift.name == 'Night Shift') | (Shift.name == 'Night Shift'),
+                Shift.is_active == True
+            ).first()
+            if not current_shift:
+                current_shift = Shift.query.filter_by(name='Night Shift', is_active=True).first()
 
         sale = CoffeeSale(
             product_id=product.id,
@@ -113,6 +123,7 @@ def new_sale():
         flash('Sale recorded successfully', 'success')
         return redirect(url_for('coffee.list_sales'))
 
+    # GET request handling
     products = Product.query.order_by(Product.name).all()
     waiters = Waiter.query.filter_by(is_active=True).order_by(Waiter.name).all()
     return render_template('coffee/form.html', products=products, waiters=waiters)
@@ -165,22 +176,42 @@ def sales_report():
 def general_report():
     # Date filter from query param
     selected_date_str = request.args.get('date')
+    selected_category = request.args.get('category')  # New category filter
     selected_date = None
+    
     if selected_date_str:
         try:
             selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
         except ValueError:
             selected_date = None
 
-    # Filter by date if provided
+    # Base queries
+    coffee_sales_query = CoffeeSale.query.join(Product)
+    orders_query = Order.query
+
+    # Apply filters
     if selected_date:
         start = datetime.combine(selected_date, datetime.min.time())
         end = datetime.combine(selected_date, datetime.max.time())
-        coffee_sales = CoffeeSale.query.filter(CoffeeSale.date >= start, CoffeeSale.date <= end).order_by(CoffeeSale.date.desc()).all()
-        orders = Order.query.filter(Order.date >= start, Order.date <= end).order_by(Order.date.desc()).all()
-    else:
-        coffee_sales = CoffeeSale.query.order_by(CoffeeSale.date.desc()).all()
-        orders = Order.query.order_by(Order.date.desc()).all()
+        coffee_sales_query = coffee_sales_query.filter(
+            CoffeeSale.date >= start, CoffeeSale.date <= end
+        )
+        orders_query = orders_query.filter(
+            Order.date >= start, Order.date <= end
+        )
+
+    if selected_category:
+        coffee_sales_query = coffee_sales_query.filter(Product.category == selected_category)
+        # For orders, we need to join through order items to products
+        orders_query = orders_query.join(Order.items).join(Product).filter(Product.category == selected_category)
+
+    # Get unique categories for filter dropdown
+    categories = db.session.query(Product.category.distinct()).order_by(Product.category).all()
+    categories = [c[0] for c in categories]
+
+    # Execute queries
+    coffee_sales = coffee_sales_query.order_by(CoffeeSale.date.desc()).all()
+    orders = orders_query.order_by(Order.date.desc()).all()
 
     # Aggregate totals
     total_coffee_sales = sum(s.total_sales for s in coffee_sales)
@@ -194,26 +225,28 @@ def general_report():
             'date': s.date,
             'product': s.product.name,
             'waiter': s.waiter.name if s.waiter else None,
-            'shift': s.shift,  # pass the shift object
+            'shift': s.shift,
             'qty': s.quantity_sold,
             'unit_price': s.unit_price,
             'total': s.total_sales,
             'payment': s.payment_mode
-        } for s in coffee_sales
+        }
+        for s in coffee_sales
     ] + [
         {
             'type': 'Order',
             'date': o.date,
             'product': ', '.join([item.product.name for item in o.items]),
             'waiter': o.waiter.name if o.waiter else None,
-            'shift': o.shift,  # pass the shift object
+            'shift': o.shift,
             'qty': sum(item.quantity for item in o.items),
             'unit_price': '',
             'total': o.total_amount,
-            'payment': ''
-        } for o in orders
+            'payment': o.payment_method if hasattr(o, 'payment_method') else 'N/A'  # Updated this line
+        }
+        for o in orders
     ]
-    
+
     recent_transactions.sort(key=lambda x: x['date'], reverse=True)
 
     return render_template(
@@ -223,9 +256,10 @@ def general_report():
         grand_total=grand_total,
         recent_transactions=recent_transactions,
         currency='Rwf',
-        selected_date=selected_date_str or ''
+        selected_date=selected_date_str or '',
+        categories=categories,  # Pass categories to template
+        selected_category=selected_category  # Pass selected category to template
     )
-
 # ==============================================
 # EXPORT ROUTES
 # ==============================================
