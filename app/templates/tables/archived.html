@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Archived Tables</h2>
+
+    <!-- Action Buttons -->
+    <div class="mb-4 d-flex justify-content-between">
+        <a href="{{ url_for('tables.list_tables') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Active Tables
+        </a>
+    </div>
+
+    <!-- Archived Tables Display -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Table No</th>
+                    <th>Capacity</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for table in tables %}
+                <tr>
+                    <td>{{ table.number }}</td>
+                    <td>{{ table.capacity }}</td>
+                    <td>{{ table.location or '-' }}</td>
+                    <td><span class="badge bg-secondary">Archived</span></td>
+                    <td>
+                        <!-- Restore Button -->
+                        <form method="post" 
+                              action="{{ url_for('tables.restore_table', table_id=table.id) }}" 
+                              class="d-inline"
+                              onsubmit="return confirm('Restore this table to active list?');">
+                            <button type="submit" class="btn btn-sm btn-success" title="Restore">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center">No archived tables found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

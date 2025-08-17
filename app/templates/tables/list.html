@@ -13,6 +13,9 @@
             <a href="{{ url_for('tables.list_tables') }}" class="btn btn-sm btn-outline-secondary active">
                 All Tables
             </a>
+            <a href="{{ url_for('tables.list_archived_tables') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="fas fa-archive"></i> Archived Tables
+</a>
             <a href="{{ url_for('coffee.new_sale') }}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i> Go Back
             </a>
@@ -72,13 +75,13 @@
                             </button>
                         </form>
 
-                        <!-- Delete Table -->
+                        <!-- Archive Table -->
                         <form method="post" 
-                              action="{{ url_for('tables.delete_table', table_id=table.id) }}" 
+                              action="{{ url_for('tables.archive_table', table_id=table.id) }}" 
                               class="d-inline" 
-                              onsubmit="return confirm('Delete this table?');">
-                            <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                <i class="fas fa-trash"></i>
+                              onsubmit="return confirm('Are you sure you want to archive this table?');">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Archive">
+                                <i class="fas fa-archive"></i>
                             </button>
                         </form>
                     </td>

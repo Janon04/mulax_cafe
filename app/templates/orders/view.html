@@ -2,143 +2,195 @@
 
 {% block content %}
 <div class="container mt-4">
+    <!-- Header with order status -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Order #{{ order.id }}</h2>
-        <span class="badge badge-{{
-            'warning' if order.status == 'pending' 
-            else 'info' if order.status == 'preparing' 
-            else 'success' if order.status == 'served' 
-            else 'danger' if order.status == 'cancelled' 
-            else 'primary' 
-        }}">
-            {{ order.status|title }}
-        </span>
+        <h2 class="mb-0">
+            <i class="fas fa-receipt text-primary me-2"></i> Order #{{ order.id }}
+        </h2>
+        <div class="d-flex align-items-center">
+            <span class="badge bg-{{
+                'warning' if order.status == 'pending' 
+                else 'info' if order.status == 'preparing' 
+                else 'success' if order.status == 'served' 
+                else 'danger' if order.status == 'cancelled' 
+                else 'primary' 
+            }} me-2 px-3 py-2 fs-6">
+                <i class="fas fa-circle me-1"></i> {{ order.status|title }}
+            </span>
+            <a href="{{ url_for('orders.print_receipt', order_id=order.id) }}" 
+               class="btn btn-outline-primary btn-sm" target="_blank">
+                <i class="fas fa-print"></i> Print Receipt
+            </a>
+        </div>
     </div>
     
-    <div class="row mb-4">
+    <!-- Order details + summary -->
+    <div class="row g-4 mb-4">
+        <!-- Left: Details Card -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Order Details</h5>
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle text-secondary me-2"></i> Order Details
+                    </h5>
+                    <small class="text-muted">Shift: {{ order.shift.name if order.shift else 'Not assigned' }}</small>
                 </div>
                 <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-4">Table Number:</dt>
-                        <dd class="col-sm-8">{{ order.table_number }}</dd>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4"><i class="fas fa-chair text-muted me-1"></i> Table:</dt>
+                        <dd class="col-sm-8">
+                            {% if order.table %}
+                                {{ order.table.number }}
+                                {% if order.table.is_occupied %}
+                                    <span class="badge bg-danger ms-2">Occupied</span>
+                                {% else %}
+                                    <span class="badge bg-success ms-2">Available</span>
+                                {% endif %}
+                            {% else %}
+                                Not assigned
+                            {% endif %}
+                        </dd>
                         
-                        <dt class="col-sm-4">Waiter:</dt>
-                        <dd class="col-sm-8">{{ order.waiter.name if order.waiter else 'N/A' }}</dd>
+                        <dt class="col-sm-4"><i class="fas fa-user-tie text-muted me-1"></i> Waiter:</dt>
+                        <dd class="col-sm-8">
+                            {% if order.waiter %}
+                                <span class="fw-bold">{{ order.waiter.name }}</span>
+                                {% if not order.waiter.is_active %}
+                                    <span class="badge bg-warning ms-2">Inactive</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </dd>
                         
-                        <dt class="col-sm-4">Created:</dt>
+                        <dt class="col-sm-4"><i class="fas fa-user text-muted me-1"></i> Created by:</dt>
+                        <dd class="col-sm-8">{{ order.user.username if order.user else 'System' }}</dd>
+                        
+                        <dt class="col-sm-4"><i class="fas fa-clock text-muted me-1"></i> Created:</dt>
                         <dd class="col-sm-8">{{ order.date.strftime('%Y-%m-%d %H:%M') }}</dd>
                         
                         {% if order.served_at %}
-    <dt class="col-sm-4">Served:</dt>
-    <dd class="col-sm-8">
-        {{ order.served_at.strftime('%Y-%m-%d %H:%M') }}
-        {% if order.served_by_user %}
-            by {{ order.served_by_user.username }}
-        {% else %}
-            by Unknown
-        {% endif %}
-    </dd>
-{% endif %}
-
+                        <dt class="col-sm-4"><i class="fas fa-check-circle text-success me-1"></i> Served:</dt>
+                        <dd class="col-sm-8">
+                            {{ order.served_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% if order.server %}
+                                by <span class="fw-bold">{{ order.server.username }}</span>
+                            {% else %}
+                                <span class="text-muted">Unknown</span>
+                            {% endif %}
+                        </dd>
+                        {% endif %}
                         
                         {% if order.notes %}
-                        <dt class="col-sm-4">Notes:</dt>
-                        <dd class="col-sm-8">{{ order.notes }}</dd>
+                        <dt class="col-sm-4"><i class="fas fa-sticky-note text-muted me-1"></i> Notes:</dt>
+                        <dd class="col-sm-8 text-muted fst-italic">{{ order.notes }}</dd>
                         {% endif %}
                     </dl>
                 </div>
             </div>
         </div>
         
+        <!-- Right: Summary Card -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Order Summary</h5>
-                    <span class="h5 mb-0">{{ "%.2f"|format(order.total_amount) }}</span>
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list-alt text-secondary me-2"></i> Order Summary
+                    </h5>
+                    <span class="h5 mb-0 text-success fw-bold">
+                        {{ "{:,.0f}".format(order.total_amount) }} RWF
+                    </span>
                 </div>
                 <div class="card-body p-0">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th class="text-right">Qty</th>
-                                <th class="text-right">Price</th>
-                                <th class="text-right">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in order.items %}
-                            <tr>
-                                <td>
-                                    {{ item.product.name }}
-                                    {% if item.special_instructions %}
-                                    <br><small class="text-muted">{{ item.special_instructions }}</small>
-                                    {% endif %}
-                                </td>
-                                <td class="text-right">{{ item.quantity }}</td>
-                                <td class="text-right">{{ "%.2f"|format(item.unit_price) }}</td>
-                                <td class="text-right">{{ "%.2f"|format(item.quantity * item.unit_price) }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><i class="fas fa-utensils me-1"></i> Item</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Price</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-medium">{{ item.product.name }}</span>
+                                            {% if item.special_instructions %}
+                                            <small class="text-muted">{{ item.special_instructions }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-end">{{ item.quantity }} {{ item.product.unit if item.product.unit else '' }}</td>
+                                    <td class="text-end">{{ "{:,.0f}".format(item.unit_price) }}</td>
+                                    <td class="text-end fw-medium">{{ "{:,.0f}".format(item.quantity * item.unit_price) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="3" class="text-end">Total:</th>
+                                    <th class="text-end">{{ "{:,.0f}".format(order.total_amount) }} RWF</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="d-flex justify-content-between">
-        <div>
-            <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Orders
+    <!-- Action buttons with enhanced permissions -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-4">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('orders.list_orders') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Orders
             </a>
             
-            {% if order.status in ['pending', 'preparing'] %}
-            <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-warning ml-2">
-                <i class="fas fa-edit"></i> Edit Order
+            {% if order.status in ['pending', 'preparing'] and (current_user.role in ['admin', 'manager'] or order.recorded_by == current_user.id) %}
+            <a href="{{ url_for('orders.edit_order', order_id=order.id) }}" class="btn btn-outline-warning">
+                <i class="fas fa-edit me-1"></i> Edit Order
             </a>
             {% endif %}
         </div>
         
         {% if order.status not in ['completed', 'cancelled'] %}
-        <div class="btn-group">
-            {% if order.status == 'pending' %}
+        <div class="btn-group flex-wrap">
+            {% if order.status == 'pending' and current_user.role in ['admin', 'manager', 'chef'] %}
             <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}">
                 <input type="hidden" name="status" value="preparing">
-                <button type="submit" class="btn btn-info">
-                    <i class="fas fa-utensils"></i> Start Preparing
+                <button type="submit" class="btn btn-outline-info">
+                    <i class="fas fa-utensils me-1"></i> Start Preparing
                 </button>
             </form>
             {% endif %}
             
-            {% if order.status == 'preparing' %}
+            {% if order.status == 'preparing' and current_user.role in ['admin', 'manager', 'chef'] %}
             <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}">
                 <input type="hidden" name="status" value="served">
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-check"></i> Mark as Served
+                <button type="submit" class="btn btn-outline-success">
+                    <i class="fas fa-concierge-bell me-1"></i> Mark as Served
                 </button>
             </form>
             {% endif %}
             
-            {% if order.status == 'served' %}
+            {% if order.status == 'served' and current_user.role in ['admin', 'manager', 'cashier'] %}
             <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}">
                 <input type="hidden" name="status" value="completed">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-check-circle"></i> Complete Order
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-check-circle me-1"></i> Complete Order
                 </button>
             </form>
             {% endif %}
             
-            {% if order.status in ['pending', 'preparing'] %}
+            {% if order.status in ['pending', 'preparing'] and current_user.role in ['admin', 'manager'] %}
             <form method="post" action="{{ url_for('orders.update_status', order_id=order.id) }}" 
-                  onsubmit="return confirm('Cancel this order?');">
+                  onsubmit="return confirm('Are you sure you want to cancel this order? This action cannot be undone.');">
                 <input type="hidden" name="status" value="cancelled">
-                <button type="submit" class="btn btn-danger">
-                    <i class="fas fa-ban"></i> Cancel Order
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-times-circle me-1"></i> Cancel Order
                 </button>
             </form>
             {% endif %}

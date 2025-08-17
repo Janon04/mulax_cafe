@@ -9,6 +9,7 @@ from app.extensions import db
 from sqlalchemy.exc import SQLAlchemyError
 from flask_restx import Api, Namespace, fields
 from flask import Flask
+from app import db
 
 class Shift(db.Model):
     __tablename__ = 'shifts'
@@ -43,62 +44,83 @@ class Attendance(db.Model):
     user = db.relationship('User', back_populates='attendances')
     shift = db.relationship('Shift', back_populates='attendances')
 
+
+
+
 class User(db.Model, UserMixin):
-    __tablename__ = 'users'
-    
+    __tablename__ = "users"
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
-    role = db.Column(db.String(20), default='employee')  # Possible values: 'system_control', 'manager', 'employee'
+    role = db.Column(db.String(20), default="employee")  
+    # Possible values: 'system_control', 'manager', 'employee'
     is_admin = db.Column(db.Boolean, default=False)
     active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone("Africa/Kigali")))
     last_login = db.Column(db.DateTime)
     must_change_password = db.Column(db.Boolean, default=True)
-    current_shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'))
-    
+    current_shift_id = db.Column(db.Integer, db.ForeignKey("shifts.id"))
+
     # Relationships
-    current_shift = db.relationship('Shift', back_populates='users')
-    attendances = db.relationship('Attendance', back_populates='user')
-    stock_movements = db.relationship('StockMovement', back_populates='user')
+    current_shift = db.relationship("Shift", back_populates="users")
+    attendances = db.relationship("Attendance", back_populates="user")
+    stock_movements = db.relationship("StockMovement", back_populates="user")
+    
     requisitions = db.relationship(
-        'Requisition', 
-        back_populates='requester', 
-        foreign_keys='[Requisition.user_id]'
+        "Requisition", 
+        back_populates="requester", 
+        foreign_keys="[Requisition.user_id]"
     )
     approved_requisitions = db.relationship(
-        'Requisition',
-        back_populates='approver',
-        foreign_keys='[Requisition.approved_by]'
+        "Requisition",
+        back_populates="approver",
+        foreign_keys="[Requisition.approved_by]"
     )
-    coffee_sales = db.relationship('CoffeeSale', back_populates='recorder')
-    orders_recorded = db.relationship('Order', back_populates='recorder', foreign_keys='[Order.recorded_by]')
-    orders_served = db.relationship('Order', back_populates='server', foreign_keys='[Order.served_by]')
-    orders_created = db.relationship('Order', back_populates='user', foreign_keys='Order.user_id')
+    
+    coffee_sales = db.relationship("CoffeeSale", back_populates="recorder")
 
+    # Order relationships (explicit with back_populates)
+    orders_recorded = db.relationship(
+        "Order",
+        back_populates="recorder",
+        foreign_keys="[Order.recorded_by]"
+    )
+    orders_served = db.relationship(
+        "Order",
+        back_populates="server",
+        foreign_keys="[Order.served_by]"
+    )
+    orders_created = db.relationship(
+        "Order",
+        back_populates="user",
+        foreign_keys="[Order.user_id]"
+    )
+
+    # Password methods
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-    
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
     # Role checking methods
     def is_system_control(self):
         """Check if user has system control role"""
-        return self.role == 'system_control' or self.is_admin
-    
+        return self.role == "system_control" or self.is_admin
+
     def is_manager(self):
         """Check if user has manager role"""
-        return self.role == 'manager' or self.is_admin
-    
+        return self.role == "manager" or self.is_admin
+
     def is_employee(self):
         """Check if user has employee role"""
-        return self.role == 'employee'
-    
+        return self.role == "employee"
+
     def can_view_user_management(self):
         """Check if user can view user management"""
         return self.is_admin or self.is_manager() or self.is_system_control()
-    
+
     def get_current_shift(self):
         """Get the current active shift for this user"""
         if self.is_admin or self.is_system_control():
@@ -107,7 +129,7 @@ class User(db.Model, UserMixin):
 
     def can_manage_shifts(self):
         """Check if user can manage shifts"""
-        return self.is_admin or self.role == 'manager'
+        return self.is_admin or self.role == "manager"
 
 
 
@@ -303,39 +325,73 @@ class Client(db.Model):
 
 
 class Order(db.Model):
-    __tablename__ = 'orders'
-    
+    __tablename__ = "orders"
+
     id = db.Column(db.Integer, primary_key=True)
-    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'))
-    table_id = db.Column(db.Integer, db.ForeignKey('tables.id'), nullable=False)
-    status = db.Column(db.String(20), default='pending')
-    notes = db.Column(db.Text)
-    payment_mode = db.Column(db.String(50))
+
+    # ================= Foreign Keys =================
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"), nullable=True, index=True)
+    table_id = db.Column(db.Integer, db.ForeignKey("tables.id"), nullable=False, index=True)
+    waiter_id = db.Column(db.Integer, db.ForeignKey("waiters.id"), nullable=True, index=True)
+    shift_id = db.Column(db.Integer, db.ForeignKey("shifts.id"), nullable=True, index=True)
+
+    # ================= Order Details =================
+    status = db.Column(db.String(20), default="pending", index=True)  # pending, served, paid, cancelled
+    notes = db.Column(db.Text, nullable=True)
+
+    payment_mode = db.Column(db.String(50), nullable=True)  # cash, momo, card, etc.
     total_amount = db.Column(db.Float, default=0.0)
-    recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # For legacy compatibility
-    waiter_id = db.Column(db.Integer, db.ForeignKey('waiters.id'), nullable=True)
-    date = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Africa/Kigali')))
-    served_at = db.Column(db.DateTime)
-    served_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-    shift_id = db.Column(db.Integer, db.ForeignKey('shifts.id'), nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Customer who placed the order
-    
-    # Relationships - all explicitly specifying foreign keys
-    client = db.relationship('Client', back_populates='orders')
-    items = db.relationship('OrderItem', back_populates='order', cascade='all, delete-orphan')
-    recorder = db.relationship('User', 
-                             back_populates='orders_recorded', 
-                             foreign_keys=[recorded_by])
-    server = db.relationship('User', 
-                           back_populates='orders_served', 
-                           foreign_keys=[served_by])
-    table = db.relationship('Table', back_populates='orders')
-    shift = db.relationship('Shift', back_populates='orders')
-    user = db.relationship('User',  # This is the customer relationship
-                         back_populates='orders_created', 
-                         foreign_keys=[user_id])
-    waiter = db.relationship('Waiter', foreign_keys=[waiter_id])
-    
+    discount = db.Column(db.Float, default=0.0)             # ✅ New: track discounts
+    tax = db.Column(db.Float, default=0.0)                  # ✅ New: track VAT/taxes
+    amount_tendered = db.Column(db.Float, default=0.0)      # ✅ For receipts
+    change = db.Column(db.Float, default=0.0)               # ✅ Optional but useful
+
+    # ================= User Tracking =================
+    recorded_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    served_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)  # creator
+
+    # ================= Time Tracking =================
+    date = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(pytz.timezone("Africa/Kigali")),
+        index=True
+    )
+    served_at = db.Column(db.DateTime, nullable=True)
+
+    # ================= System Flags =================
+    is_active = db.Column(db.Boolean, default=True)   # ✅ For soft delete/archive
+
+    # ================= Relationships =================
+    client = db.relationship("Client", back_populates="orders")
+    items = db.relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    table = db.relationship("Table", back_populates="orders")
+    shift = db.relationship("Shift", back_populates="orders")
+    waiter = db.relationship("Waiter", back_populates="orders")
+
+    recorder = db.relationship(
+        "User",
+        foreign_keys=[recorded_by],
+        back_populates="orders_recorded"
+    )
+    server = db.relationship(
+        "User",
+        foreign_keys=[served_by],
+        back_populates="orders_served"
+    )
+    user = db.relationship(
+        "User",
+        foreign_keys=[user_id],
+        back_populates="orders_created"
+    )
+
+    # ================= Utility Methods =================
+    def calculate_final_amount(self):
+        """Calculate final payable amount after discount and tax."""
+        return max((self.total_amount - self.discount) + self.tax, 0)
+
+    def __repr__(self):
+        return f"<Order {self.id} - {self.status} | Table {self.table_id} | Waiter {self.waiter_id}>"
 class Table(db.Model):
     __tablename__ = 'tables'
     
@@ -343,7 +399,8 @@ class Table(db.Model):
     number = db.Column(db.Integer, unique=True, nullable=False)
     is_occupied = db.Column(db.Boolean, default=False)
     capacity = db.Column(db.Integer, nullable=False, default=2)
-    location = db.Column(db.String(50))  # e.g., "Patio", "Main Dining", "Bar"
+    location = db.Column(db.String(50))
+    is_archived = db.Column(db.Boolean, default=False, nullable=False)
     
     orders = db.relationship('Order', back_populates='table', lazy='dynamic')
     
@@ -462,14 +519,20 @@ class NotificationLog(db.Model):
         self.last_retry_at = datetime.now(pytz.timezone('Africa/Kigali'))
         db.session.add(self)
         db.session.commit()
+
+
+
 class Waiter(db.Model):
-    __tablename__ = 'waiters'
-    
+    __tablename__ = "waiters"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     phone_number = db.Column(db.String(10), nullable=True)
     email = db.Column(db.String(120), nullable=True, unique=True)
     is_active = db.Column(db.Boolean, default=True)
+
+    # Relationship to orders (matches Order.waiter)
+    orders = db.relationship("Order", back_populates="waiter", lazy="dynamic")
 
     def __repr__(self):
         return f"<Waiter {self.name}>"

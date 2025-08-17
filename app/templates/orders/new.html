@@ -2,139 +2,209 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Create New Order</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Create New Order</h2>
+        <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Orders
+        </a>
+    </div>
     
-    <form method="post">
+    <form method="post" id="order-form">
         {{ form.hidden_tag() }}
         
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="table_id">Table</label>
-                    <select class="form-control" id="table_id" name="table_id" required>
-                        <option value="">Select a table</option>
-                        {% for table in tables %}
-                            <option value="{{ table.id }}"
-                                {% if form.table_id.data == table.id %}selected{% endif %}
-                                {% if table.is_occupied %}disabled{% endif %}>
-                                {{ table.number }} ({{ table.location or 'No location' }}) - 
-                                {{ 'Occupied' if table.is_occupied else 'Available' }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    {% if form.table_id.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.table_id.errors %}
-                                {{ error }}
-                            {% endfor %}
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Order Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="table_id">Table <span class="text-danger">*</span></label>
+                            <select class="form-control" id="table_id" name="table_id" required>
+                                <option value="">Select a table</option>
+                                {% for table in tables %}
+                                    <option value="{{ table.id }}"
+                                        {% if form.table_id.data == table.id %}selected{% endif %}
+                                        {% if table.is_occupied %}disabled{% endif %}>
+                                        {{ table.number }} ({{ table.location or 'No location' }}) - 
+                                        {{ 'Occupied' if table.is_occupied else 'Available' }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.table_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.table_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-                    {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="waiter_id">Assign to Waiter</label>
+                            <select class="form-control" id="waiter_id" name="waiter_id">
+                                <option value="">Select a Waiter</option>
+                                {% for waiter in waiters %}
+                                    <option value="{{ waiter.id }}" {% if request.form.waiter_id|default('')|string == waiter.id|string %}selected{% endif %}>
+                                        {{ waiter.name }} ({{ waiter.phone_number }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="notes">Order Notes</label>
-                    <textarea class="form-control" id="notes" name="notes" rows="1">{{ form.notes.data or '' }}</textarea>
-                </div>
-            </div>
-        </div>
 
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="waiter_id">Assign to Waiter</label>
-                    <select class="form-control" id="waiter_id" name="waiter_id">
-                        <option value="">Select a Waiter</option>
-                        {% for waiter in waiters %}
-                            <option value="{{ waiter.id }}" {% if request.form.waiter_id|default('')|string == waiter.id|string %}selected{% endif %}>
-                                {% if waiter.username is defined %}{{ waiter.username }}{% elif waiter.name is defined %}{{ waiter.name }}{% else %}Waiter #{{ waiter.id }}{% endif %}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label>Shift</label>
-                    <input type="text" class="form-control" readonly 
-                           value="{{ current_shift.name if current_shift else 'No active shift' }}">
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="notes">Order Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2">{{ form.notes.data or '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Current Shift</label>
+                            <input type="text" class="form-control" readonly 
+                                value="{{ current_shift.name if current_shift else 'No active shift' }}">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     
-        <h4 class="mb-3">Order Items</h4>
-        <div class="table-responsive mb-4">
-            <table class="table table-bordered">
-                <thead class="thead-light">
-                    <tr>
-                        <th>Product</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Subtotal</th>
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for product in products %}
-                    <tr>
-                        <td>{{ product.name }}</td>
-                        <td>{{ "%.2f"|format(product.unit_price) }}</td>
-                        <td>
-                            <input type="number" name="product_{{ product.id }}" 
-                                   class="form-control quantity-input" min="0" value="0"
-                                   data-price="{{ product.unit_price }}">
-                        </td>
-                        <td class="subtotal">0.00</td>
-                        <td>
-                            <input type="text" name="notes_{{ product.id }}" 
-                                   class="form-control" placeholder="Special instructions">
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr class="table-active">
-                        <th colspan="3">Total</th>
-                        <th id="order-total">0.00</th>
-                        <th></th>
-                    </tr>
-                </tfoot>
-            </table>
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Order Items</h5>
+                <small class="text-muted">Click quantity fields to add items</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 30%">Product</th>
+                                <th style="width: 15%">Price (RWF)</th>
+                                <th style="width: 15%">Quantity</th>
+                                <th style="width: 15%">Subtotal (RWF)</th>
+                                <th style="width: 25%">Special Instructions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td>{{ "{:,.0f}".format(product.unit_price) }}</td>
+                                <td>
+                                    <input type="number" name="product_{{ product.id }}" 
+                                        class="form-control quantity-input" min="0" step="1" value="0"
+                                        data-price="{{ product.unit_price }}"
+                                        data-product="{{ product.name }}"
+                                        onfocus="this.select()">
+                                </td>
+                                <td class="subtotal">0</td>
+                                <td>
+                                    <input type="text" name="notes_{{ product.id }}" 
+                                        class="form-control" placeholder="E.g. No sugar, Extra ice">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <th colspan="3" class="text-right">Total Amount:</th>
+                                <th id="order-total">0</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <!-- Payment Mode Selection -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label for="payment_mode">Payment Mode</label>
-                    <select class="form-control" id="payment_mode" name="payment_mode" required>
-                        <option value="">Select payment mode</option>
-                        <option value="Cash" {% if request.form.payment_mode == 'Cash' %}selected{% endif %}>Cash</option>
-                        <option value="Mobile Money" {% if request.form.payment_mode == 'Mobile Money' %}selected{% endif %}>Mobile Money</option>
-                        <option value="Card" {% if request.form.payment_mode == 'Card' %}selected{% endif %}>Card</option>
-                        <option value="Other" {% if request.form.payment_mode == 'Other' %}selected{% endif %}>Other</option>
-                    </select>
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Payment Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="payment_mode">Payment Mode <span class="text-danger">*</span></label>
+                            <select class="form-control" id="payment_mode" name="payment_mode" required>
+                                <option value="">Select payment mode</option>
+                                <option value="Cash" {% if request.form.payment_mode == 'Cash' %}selected{% endif %}>Cash</option>
+                                <option value="Mobile Money" {% if request.form.payment_mode == 'Mobile Money' %}selected{% endif %}>Mobile Money</option>
+                                <option value="Card" {% if request.form.payment_mode == 'Card' %}selected{% endif %}>Card</option>
+                                <option value="Other" {% if request.form.payment_mode == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="amount_tendered">Amount Tendered (RWF)</label>
+                            <input type="number" class="form-control" id="amount_tendered" name="amount_tendered" 
+                                min="0" step="1000" value="{{ request.form.amount_tendered or '' }}">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="form-group">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Create Order
-            </button>
-            <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary">
+        <div class="form-group d-flex justify-content-between">
+            <div>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save"></i> Create Order
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-lg ml-2" onclick="printOrderPreview()">
+                    <i class="fas fa-print"></i> Print Preview
+                </button>
+            </div>
+            <a href="{{ url_for('orders.list_orders') }}" class="btn btn-danger btn-lg">
                 <i class="fas fa-times"></i> Cancel
             </a>
         </div>
     </form>
 </div>
 
+<!-- Print Preview Modal -->
+<div class="modal fade" id="printPreviewModal" tabindex="-1" role="dialog" aria-labelledby="printPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="printPreviewModalLabel">Order Receipt Preview</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="$('#printPreviewModal').modal('hide')">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="print-preview-content">
+                <!-- Preview content will be inserted here by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="$('#printPreviewModal').modal('hide')">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printReceipt()">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const quantityInputs = document.querySelectorAll('.quantity-input');
+    const orderForm = document.getElementById('order-form');
     
+    // Format number with commas
+    function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
+    // Calculate order total
     function calculateTotal() {
         let total = 0;
+        let hasItems = false;
         
         quantityInputs.forEach(input => {
             const row = input.closest('tr');
@@ -142,13 +212,49 @@ document.addEventListener('DOMContentLoaded', function() {
             const price = parseFloat(input.dataset.price);
             const subtotal = quantity * price;
             
-            row.querySelector('.subtotal').textContent = subtotal.toFixed(2);
+            row.querySelector('.subtotal').textContent = formatNumber(subtotal);
             total += subtotal;
+            
+            if (quantity > 0) {
+                hasItems = true;
+                row.style.backgroundColor = '#f8f9fa';
+            } else {
+                row.style.backgroundColor = '';
+            }
         });
         
-        document.getElementById('order-total').textContent = total.toFixed(2);
+        document.getElementById('order-total').textContent = formatNumber(total);
+        return hasItems;
     }
     
+    // Validate form before submission
+    orderForm.addEventListener('submit', function(e) {
+        if (!calculateTotal()) {
+            e.preventDefault();
+            alert('Please add at least one item to the order');
+            return false;
+        }
+        
+        const tableSelect = document.getElementById('table_id');
+        if (!tableSelect.value) {
+            e.preventDefault();
+            alert('Please select a table');
+            tableSelect.focus();
+            return false;
+        }
+        
+        const paymentMode = document.getElementById('payment_mode');
+        if (!paymentMode.value) {
+            e.preventDefault();
+            alert('Please select a payment mode');
+            paymentMode.focus();
+            return false;
+        }
+        
+        return true;
+    });
+    
+    // Set up quantity inputs
     quantityInputs.forEach(input => {
         input.addEventListener('change', calculateTotal);
         input.addEventListener('input', calculateTotal);
@@ -157,5 +263,178 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial calculation
     calculateTotal();
 });
+
+function printOrderPreview() {
+    if (!calculateTotal()) {
+        alert('Please add at least one item to generate a preview');
+        return;
+    }
+
+    const form = document.getElementById('order-form');
+    const tableSelect = document.getElementById('table_id');
+    const waiterSelect = document.getElementById('waiter_id');
+    const paymentMode = document.getElementById('payment_mode');
+    const notes = document.getElementById('notes');
+    
+    let receiptHTML = `
+        <div class="receipt-container" style="font-family: Arial, sans-serif; max-width: 80mm; margin: 0 auto;">
+            <div class="text-center mb-3">
+                <h3 style="margin-bottom: 5px;">Mulax Cafe</h3>
+                <p style="margin: 0; font-size: 14px;">Kisimenti KG113 St, Kigali, Rwanda</p>
+                <p style="margin: 0; font-size: 14px;">Tel: +250 788 220 411</p>
+            </div>
+            
+            <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+            
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Order #:</strong>
+                    <span>NEW</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Date:</strong>
+                    <span>${new Date().toLocaleString()}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Table:</strong>
+                    <span>${tableSelect.options[tableSelect.selectedIndex].text.split(' - ')[0] || 'N/A'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Waiter:</strong>
+                    <span>${waiterSelect.options[waiterSelect.selectedIndex].text || 'N/A'}</span>
+                </div>
+            </div>
+            
+            <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+            
+            <table style="width: 100%; margin-bottom: 15px; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #000;">
+                        <th style="text-align: left; padding: 5px 0;">Item</th>
+                        <th style="text-align: right; padding: 5px 0;">Qty</th>
+                        <th style="text-align: right; padding: 5px 0;">Price</th>
+                        <th style="text-align: right; padding: 5px 0;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+    
+    let totalAmount = 0;
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    quantityInputs.forEach(input => {
+        const quantity = parseInt(input.value) || 0;
+        if (quantity > 0) {
+            const productName = input.dataset.product;
+            const price = parseFloat(input.dataset.price);
+            const subtotal = quantity * price;
+            totalAmount += subtotal;
+            
+            receiptHTML += `
+                <tr style="border-bottom: 1px dashed #ddd;">
+                    <td style="padding: 5px 0;">${productName}</td>
+                    <td style="text-align: right; padding: 5px 0;">${quantity}</td>
+                    <td style="text-align: right; padding: 5px 0;">${price.toLocaleString('en-US')}</td>
+                    <td style="text-align: right; padding: 5px 0;">${subtotal.toLocaleString('en-US')}</td>
+                </tr>`;
+            
+            const notesInput = input.closest('tr').querySelector('input[type="text"]');
+            if (notesInput && notesInput.value) {
+                receiptHTML += `
+                <tr>
+                    <td colspan="4" style="padding: 0 0 5px 0; font-size: 12px;">
+                        &nbsp;&nbsp;&nbsp;> ${notesInput.value}
+                    </td>
+                </tr>`;
+            }
+        }
+    });
+    
+    receiptHTML += `
+                </tbody>
+                <tfoot>
+                    <tr style="border-top: 1px solid #000;">
+                        <th colspan="3" style="text-align: right; padding: 5px 0;">Total (RWF):</th>
+                        <th style="text-align: right; padding: 5px 0;">${totalAmount.toLocaleString('en-US')}</th>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="padding: 5px 0; text-align: center;">
+                            Payment: ${paymentMode.value || 'Not specified'}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+            
+            <div style="text-align: center; margin-top: 15px; font-size: 12px;">
+                <p>Thank you for your order!</p>
+                <p>${notes.value ? 'Notes: ' + notes.value : ''}</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('print-preview-content').innerHTML = receiptHTML;
+    $('#printPreviewModal').modal('show');
+}
+
+function printReceipt() {
+    const printContent = document.getElementById('print-preview-content').innerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = printContent;
+    window.print();
+    document.body.innerHTML = originalContent;
+    $('#printPreviewModal').modal('hide');
+    
+    // Rebind events after restoring original content
+    document.addEventListener('DOMContentLoaded', function() {
+        const quantityInputs = document.querySelectorAll('.quantity-input');
+        quantityInputs.forEach(input => {
+            input.addEventListener('change', calculateTotal);
+            input.addEventListener('input', calculateTotal);
+        });
+    });
+}
 </script>
+
+<style>
+.quantity-input:focus {
+    background-color: #fff8e1;
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-responsive {
+        border: 0;
+    }
+    .table-responsive table {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .table-responsive thead {
+        display: none;
+    }
+    .table-responsive tr {
+        margin-bottom: 10px;
+        display: block;
+        border: 1px solid #ddd;
+    }
+    .table-responsive td {
+        display: block;
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+    }
+    .table-responsive td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        text-align: left;
+        font-weight: bold;
+    }
+}
+</style>
 {% endblock %}

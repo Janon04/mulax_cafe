@@ -120,7 +120,7 @@
                     <th>Table</th>
                     <th>Server</th>
                     <th>Items</th>
-                    <th>Total(Rwf)</th>
+                    <th>Total (RWF)</th>
                     <th>Status</th>
                     <th>Time</th>
                     <th>Actions</th>
@@ -157,7 +157,7 @@
                         {{ waiter.name if waiter else 'N/A' }}
                     </td>
                     <td>{{ order.items|length }}</td>
-                    <td>{{ "%.2f"|format(order.total_amount) }}</td>
+                    <td>{{ "{:,.2f}".format(order.total_amount) }}</td>
 
                     <!-- Status Badge -->
                     <td>

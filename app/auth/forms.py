@@ -97,13 +97,16 @@ class EditUserForm(FlaskForm):
 class TableForm(FlaskForm):
     number = IntegerField('Table Number', validators=[DataRequired()])
     capacity = IntegerField('Capacity', validators=[DataRequired(), NumberRange(min=1)])
-    location = SelectField('Location', choices=[
-        ('', 'Select location'),
-        ('main', 'Main Dining'),
-        ('patio', 'Patio'),
-        ('bar', 'Bar Area'),
-        ('private', 'Private Room')
-    ])
+    location = SelectField(
+        'Location',
+        choices=[
+            ('', 'Select location'),
+            ('Indoor Section', 'Indoor Section'),
+            ('Outdoor Section', 'Outdoor Section'),
+            ('VIP / Lounge Area', 'VIP / Lounge Area'),
+            ('Bar Counter', 'Bar Counter')
+        ]
+    )
     submit = SubmitField('Save Table')
 
     def validate_number(self, field):
